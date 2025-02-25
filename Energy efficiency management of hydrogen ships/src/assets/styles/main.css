@@ -1,0 +1,437 @@
+/* 将原HTML中的所有样式复制到这里，去掉<style>标签 */
+/* 基础布局样式 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+    gap: 11px;
+    padding: 0 11px;
+    box-sizing: border-box;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+    color: #2c3e50;
+    padding: 25px;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: calc(100vh - 20px);
+    z-index: 1;
+    margin: 10px;
+    margin-right: 0;
+    margin-top: 10px;
+    border-radius: 15px;
+    position: relative;
+    overflow-y: auto;
+    width: 220px;
+}
+
+/* 侧边栏菜单项样式 */
+.sidebar .menu-item-wrap {
+    cursor: pointer;
+}
+
+.sidebar .menu-item h2 {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 15px 0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+/* 为每个菜单项添加图标 */
+.sidebar .menu-item h2::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* 为每个菜单项添加特定图标 */
+#menuItem0 h2::before {
+    content: "\f54b";  /* 船舶图标 */
+    color: #3498db;
+}
+
+#menuItem1 h2::before {
+    content: "\f080";  /* 记录图标 */
+    color: #2ecc71;
+}
+
+#menuItem2 h2::before {
+    content: "\f0e4";  /* 检测图标 */
+    color: #e67e22;
+}
+
+#menuItem3 h2::before {
+    content: "\f5eb";  /* 决策图标 */
+    color: #e74c3c;
+}
+
+#menuItemReportGen h2::before {
+    content: "\f15c";  /* 报告图标 */
+    color: #9b59b6;
+}
+
+/* 修改子菜单项样式 */
+.sidebar .menu-item li {
+    padding: 10px 15px 10px 45px;
+    color: #4a5568;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 6px;
+    margin: 2px 0;
+    position: relative;
+}
+
+/* 为子菜单项添加小图标 */
+.sidebar .menu-item li::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: "\f105";  /* 箭头图标 */
+    position: absolute;
+    left: 25px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* 悬停效果 */
+.sidebar .menu-item h2:hover {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    transform: translateX(5px);
+}
+
+.sidebar .menu-item li:hover {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    transform: translateX(5px);
+}
+
+/* 活动状态样式 */
+.sidebar .menu-item.active h2 {
+    background: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+}
+
+/* 主要内容区域样式 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    margin: 10px;
+    margin-left: 20px;
+    min-width: 0;
+}
+
+/* 页眉样式 */
+header {
+    background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+    color: #2c3e50;
+    padding: 10px 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 0;
+    margin-bottom: 15px;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+/* 导航栏样式 */
+.navbar {
+    display: flex;
+    justify-content: flex-end;
+    grid-column: 1 / -1;
+}
+
+.nav-list {
+    display: flex;
+    list-style: none;
+    margin: 5px;
+    padding: 10px;
+    gap: 20px;
+}
+
+.nav-item {
+    margin: 0;
+}
+
+.nav-item a {
+    color: #2c3e50;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.nav-item a:hover {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    transform: translateY(-2px);
+}
+
+/* 搜索区域样式 */
+.search-area {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 25px;
+    background: linear-gradient(145deg, #ffffff, #f5f7fa);
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+.search-group {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.search-group-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.search-group-title i {
+    margin-right: 10px;
+    color: #3498db;
+}
+
+/* 搜索字段样式 */
+.search-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.search-fields input,
+.search-fields select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-fields input:focus,
+.search-fields select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+}
+
+/* 按钮样式 */
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 0 20px;
+}
+
+.add-btn,
+.import-btn,
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-btn {
+    background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+}
+
+.import-btn {
+    background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+}
+
+.export-btn {
+    background: linear-gradient(135deg, #20B2AA 0%, #008B8B 100%);
+}
+
+/* 表格样式 */
+.table-container {
+    flex: 1;
+    overflow: auto;
+    margin: 10px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* 分页样式 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 30px 0;
+    gap: 15px;
+}
+
+.pagination button {
+    padding: 8px 15px;
+    border: none;
+    background: #f8fafc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pagination button:hover {
+    background: #e2e8f0;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    margin: 50px auto;
+    padding: 25px;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.close-btn {
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+}
+
+/* 表单样式 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #4b5563;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* 上传进度条样式 */
+.upload-progress {
+    display: none;
+    margin-top: 10px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #34D399 0%, #059669 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* 导出选项样式 */
+.export-options {
+    margin: 20px 0;
+}
+
+.export-option {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.export-option:hover {
+    background-color: #f3f4f6;
+} 

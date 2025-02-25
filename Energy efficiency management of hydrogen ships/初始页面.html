@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氢能船舶能效管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            min-width: 1200px;
+            width: 100%;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            padding: 10px;
+            gap: 10px;
+        }
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+            flex: 0 0 220px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            min-width: 0;
+            height: calc(100vh - 20px);
+        }
+        .header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        .header h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .el-menu {
+            border-right: none;
+            background: transparent !important;
+        }
+        .el-menu-item {
+            height: 50px;
+            line-height: 50px;
+            margin: 8px 0;
+            border-radius: 8px;
+            color: #2c3e50 !important;
+            background: rgba(255, 255, 255, 0.7) !important;
+        }
+        .el-menu-item:hover {
+            background: rgba(52, 152, 219, 0.1) !important;
+            color: #3498db !important;
+            transform: translateX(5px);
+        }
+        .el-menu-item.is-active {
+            background: rgba(52, 152, 219, 0.15) !important;
+            color: #3498db !important;
+        }
+        .el-menu-item i {
+            color: #3498db;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .card h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ebeef5;
+            display: flex;
+            align-items: center;
+        }
+        .status-info {
+            padding: 10px 0;
+        }
+        .status-info p {
+            margin: 12px 0;
+            color: #606266;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .status-info span {
+            color: #2c3e50;
+            font-weight: 500;
+            margin-left: 5px;
+        }
+        .el-dropdown-link {
+            cursor: pointer;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+        .el-dropdown-link:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+        #energy-chart {
+            width: 100% !important;
+            height: 400px !important;
+            min-height: 400px;
+        }
+        .el-table {
+            margin-top: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .el-table th {
+            background-color: #f5f7fa;
+            color: #2c3e50;
+        }
+        .el-table td {
+            padding: 8px 0;
+        }
+        @media screen and (min-width: 1600px) {
+            .dashboard-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media screen and (max-width: 1400px) {
+            .dashboard-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media screen and (max-width: 1200px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+        }
+        .data-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+            margin: 5px 0;
+        }
+        .data-item .label {
+            font-size: 14px;
+            color: #606266;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .progress-bar .progress {
+            height: 100%;
+            border-radius: 4px;
+            background: #3498db;
+            transition: width 0.3s ease;
+        }
+        .mini-chart {
+            height: 50px;
+            margin-top: 10px;
+        }
+        .status-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .status-tag.normal {
+            background: rgba(103, 194, 58, 0.1);
+            color: #67C23A;
+        }
+        .status-tag.warning {
+            background: rgba(230, 162, 60, 0.1);
+            color: #E6A23C;
+        }
+        .status-tag.danger {
+            background: rgba(245, 108, 108, 0.1);
+            color: #F56C6C;
+        }
+        #app {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .system-status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 10px 0;
+        }
+        .status-item {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .status-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status-item i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        .status-item .status-label {
+            font-size: 14px;
+            color: #606266;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .status-item .status-value {
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 500;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .card.chart-card {
+            grid-column: span 2;
+        }
+        .ship-info {
+            background: rgba(52, 152, 219, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .ship-basic-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .info-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .info-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .info-label {
+            color: #606266;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info-label i {
+            color: #3498db;
+            font-size: 16px;
+        }
+        .info-value {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .sidebar .menu-item {
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+            user-select: none;
+        }
+        .sidebar .menu-item ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: none; /* 默认隐藏子菜单 */
+        }
+        .sidebar .menu-item.active ul {
+            display: block; /* 激活时显示子菜单 */
+        }
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+            user-select: none;
+        }
+        .sidebar .menu-item li.active {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+        .sidebar .menu-item li:hover::before {
+            color: #3498db;
+            transform: translateX(2px);
+        }
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+        /* 添加展开/收起动画 */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .sidebar .menu-item.active ul {
+            max-height: 500px; /* 设置一个足够大的值 */
+            transition: max-height 0.5s ease-in;
+        }
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="menu-item" id="menuItem0">
+                    <h2>船舶信息</h2>
+                    <ul>
+                        <li>船舶基本信息</li>
+                        <li>船舶证书信息</li>
+                        <li>船舶检验信息</li>
+                        <li>船舶设备信息</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItem1">
+                    <h2>航行记录</h2>
+                    <ul>
+                        <li>航次记录</li>
+                        <li>日报记录</li>
+                        <li>加氢记录</li>
+                        <li>储氢罐记录</li>
+                        <li>能耗记录表</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItem2">
+                    <h2>在线监测</h2>
+                    <ul>
+                        <li>实时监测数据</li>
+                        <li>历史监测数据</li>
+                        <li>监测点管理</li>
+                        <li>报警记录</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItem3">
+                    <h2>能效优化</h2>
+                    <ul>
+                        <li>航速优化</li>
+                        <li>航线优化</li>
+                        <li>纵倾优化</li>
+                        <li>能效评估</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItem4">
+                    <h2>人员管理</h2>
+                    <ul>
+                        <li>船员信息</li>
+                        <li>值班安排</li>
+                        <li>培训记录</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItem5">
+                    <h2>维护保养</h2>
+                    <ul>
+                        <li>维护计划</li>
+                        <li>维护记录</li>
+                        <li>备件管理</li>
+                        <li>维修记录</li>
+                    </ul>
+                </div>
+                <div class="menu-item" id="menuItemReportGen">
+                    <h2>报表管理</h2>
+                    <ul>
+                        <li>能效报告</li>
+                        <li>维护报告</li>
+                        <li>航行报告</li>
+                        <li>检验报告</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="main-content">
+                <!-- 顶部导航栏 -->
+                <div class="header">
+                    <h2>氢能船舶能效管理系统</h2>
+                    <el-dropdown>
+                        <span class="el-dropdown-link">
+                            <i class="fas fa-user"></i>
+                            管理员 
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item>
+                                    <i class="fas fa-user"></i> 个人信息
+                                </el-dropdown-item>
+                                <el-dropdown-item>
+                                    <i class="fas fa-key"></i> 修改密码
+                                </el-dropdown-item>
+                                <el-dropdown-item>
+                                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                                </el-dropdown-item>
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
+                </div>
+
+                <!-- 仪表板卡片 -->
+                <div class="dashboard-cards">
+                    <!-- 船舶概况卡片 -->
+                    <div class="card full-width">
+                        <h3>
+                            <i class="fas fa-ship" style="margin-right: 5px; color: #3498db;"></i>
+                            船舶概况
+                        </h3>
+                        <!-- 添加船舶基本信息 -->
+                        <div class="ship-info">
+                            <div class="ship-basic-info">
+                                <div class="info-row">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-id-card"></i> 船舶编号：</span>
+                                        <span class="info-value">HY-20240315</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-signature"></i> 船舶名称：</span>
+                                        <span class="info-value">远航1号</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-ruler-combined"></i> 船舶类型：</span>
+                                        <span class="info-value">散货船</span>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-weight"></i> 总吨位：</span>
+                                        <span class="info-value">50,000 吨</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-arrows-alt-h"></i> 船长：</span>
+                                        <span class="info-value">180 米</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-arrows-alt-v"></i> 船宽：</span>
+                                        <span class="info-value">32 米</span>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-water"></i> 吃水深度：</span>
+                                        <span class="info-value">12 米</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-tachometer-alt"></i> 设计航速：</span>
+                                        <span class="info-value">20 节</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-calendar-alt"></i> 建造年份：</span>
+                                        <span class="info-value">2024年</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 运行状态信息 -->
+                        <div class="data-grid" style="margin-top: 20px;">
+                            <div class="data-item">
+                                <i class="fas fa-tachometer-alt" style="color: #3498db;"></i>
+                                <div class="value">15.5</div>
+                                <div class="label">当前航速(节)</div>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 77.5%;"></div>
+                                </div>
+                            </div>
+                            <div class="data-item">
+                                <i class="fas fa-gas-pump" style="color: #3498db;"></i>
+                                <div class="value">85%</div>
+                                <div class="label">氢燃料余量</div>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 85%;"></div>
+                                </div>
+                            </div>
+                            <div class="data-item">
+                                <i class="fas fa-clock" style="color: #3498db;"></i>
+                                <div class="value">72</div>
+                                <div class="label">航行时间(h)</div>
+                            </div>
+                            <div class="data-item">
+                                <i class="fas fa-award" style="color: #67C23A;"></i>
+                                <div class="value">A</div>
+                                <div class="label">能效等级</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 实时能效监测 -->
+                    <div class="card chart-card">
+                        <h3>
+                            <i class="fas fa-chart-line" style="margin-right: 5px; color: #3498db;"></i>
+                            实时能效监测
+                            <span class="status-tag normal">正常</span>
+                        </h3>
+                        <div id="energy-chart"></div>
+                    </div>
+
+                    <!-- 系统状态 -->
+                    <div class="card">
+                        <h3>
+                            <i class="fas fa-heartbeat" style="margin-right: 5px; color: #3498db;"></i>
+                            系统状态
+                        </h3>
+                        <div class="system-status-grid">
+                            <div class="status-item">
+                                <i class="fas fa-thermometer-half"></i>
+                                <div class="status-label">燃料电池温度</div>
+                                <div class="status-value">65°C</div>
+                                <span class="status-tag normal">正常</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <div class="status-label">系统压力</div>
+                                <div class="status-value">3.2 MPa</div>
+                                <span class="status-tag warning">偏高</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-battery-three-quarters"></i>
+                                <div class="status-label">电池状态</div>
+                                <div class="status-value">正常运行</div>
+                                <span class="status-tag normal">正常</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-wind"></i>
+                                <div class="status-label">通风系统</div>
+                                <div class="status-value">运行中</div>
+                                <span class="status-tag normal">正常</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 航行信息 -->
+                    <div class="card">
+                        <h3>
+                            <i class="fas fa-route" style="margin-right: 5px; color: #3498db;"></i>
+                            航行信息
+                        </h3>
+                        <div class="status-info">
+                            <p>
+                                <i class="fas fa-map-marker-alt" style="margin-right: 5px; color: #3498db;"></i>
+                                当前位置：<span>东经 120°12'，北纬 30°16'</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-compass" style="margin-right: 5px; color: #3498db;"></i>
+                                航向：<span>东北 45°</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-ruler-horizontal" style="margin-right: 5px; color: #3498db;"></i>
+                                已航行距离：<span>286.5 海里</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-clock" style="margin-right: 5px; color: #3498db;"></i>
+                                预计到达时间：<span>2024-03-16 18:30</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 能效分析 -->
+                    <div class="card">
+                        <h3>
+                            <i class="fas fa-chart-pie" style="margin-right: 5px; color: #3498db;"></i>
+                            能效分析
+                        </h3>
+                        <div class="status-info">
+                            <p>
+                                <i class="fas fa-bolt" style="margin-right: 5px; color: #3498db;"></i>
+                                当前功率：<span>2500 kW</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-gas-pump" style="margin-right: 5px; color: #3498db;"></i>
+                                氢耗率：<span>2.4 kg/h</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-chart-bar" style="margin-right: 5px; color: #3498db;"></i>
+                                能效指数：<span>92</span>
+                                <span class="status-tag normal">优秀</span>
+                            </p>
+                            <p>
+                                <i class="fas fa-leaf" style="margin-right: 5px; color: #67C23A;"></i>
+                                碳减排量：<span>12.5 吨</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 告警信息 -->
+                    <div class="card full-width">
+                        <h3>
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 5px; color: #3498db;"></i>
+                            系统告警
+                        </h3>
+                        <el-table :data="alarmData" style="width: 100%" :stripe="true">
+                            <el-table-column prop="time" label="时间" width="180"></el-table-column>
+                            <el-table-column prop="type" label="类型" width="200"></el-table-column>
+                            <el-table-column prop="description" label="描述"></el-table-column>
+                            <el-table-column prop="status" label="状态" width="100">
+                                <template #default="scope">
+                                    <el-tag
+                                        :type="scope.row.status === '已处理' ? 'success' : 
+                                               scope.row.status === '处理中' ? 'warning' : 'danger'">
+                                        {{ scope.row.status }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5"></script>
+    <script src="main.js"></script>
+</body>
+</html> 

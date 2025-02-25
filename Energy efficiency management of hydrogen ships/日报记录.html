@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日报记录</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="js/common.js"></script>
+    <style>
+        /* 基础布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 侧边栏菜单项样式 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 为每个菜单项添加图标 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 为每个菜单项添加特定图标 */
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        /* 修改子菜单项样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        /* 为子菜单项添加小图标 */
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 悬停效果 */
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 活动状态样式 */
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        /* 添加图标悬停效果 */
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0; /* 防止flex子项溢出 */
+        }
+
+        /* 搜索区域样式 */
+        .search-area {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 25px;
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .search-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .report-search-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .report-search-item label {
+            min-width: 80px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .report-search-item input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e0e6ed;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        /* 表格容器样式 */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .import-btn { background: #28a745; }
+        .export-btn { background: #17a2b8; }
+        .add-btn { background: #007bff; }
+
+        /* 表格样式 */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* 添加侧边栏内输入框和下拉框获取焦点时的样式 */
+        .sidebar input[type="text"]:focus,
+        .sidebar select:focus {
+            outline: 2px solid #0a3cc577;
+            outline-offset: 2px;
+            transition: outline 0.2s ease;
+        }
+
+        /* 侧边栏一级标题样式 */
+        .sidebar h2 {
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            color: #0a0a0a;
+            font-size: 20px;
+            transition: color 0.3s ease;
+        }
+
+        /* 鼠标悬停在标题上时的样式 */
+        .sidebar h2:hover {
+            color: #3c63ac;
+            transition: color 0.3s ease;
+        }
+
+        .sidebar li:hover {
+            color: #3c63ac;
+            transition: color 0.3s ease;
+        }
+
+        /* 标题在悬停或获取焦点时的样式 */
+        .sidebar .menu-item h2:hover,
+        .sidebar .menu-item h2:focus {
+            transform: scale(1.20);
+        }
+
+        /* 菜单项内容在获取焦点时的样式 */
+        .sidebar .menu-item li:hover,
+        .sidebar .menu-item li:focus {
+            transform: scale(1.15);
+        }
+
+        /* 侧边栏无序列表（ul）式 */
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 0px;
+        }
+
+        /* 侧边栏列表项（li）通用样式 */
+        .sidebar ul li {
+            font-weight: bold;
+            margin-bottom: 1px;
+            padding: 3px 0;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* 修改侧边栏菜单项的悬停效果 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* 修改标题悬停效果 */
+        .sidebar .menu-item h2:hover {
+            color: #3c63ac;
+            transform: scale(1.05);
+            background: rgba(60, 99, 172, 0.1);
+        }
+
+        /* 修改列表项悬停效果 */
+        .sidebar .menu-item li {
+            padding: 12px 20px 12px 40px;
+            color: #666;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+        }
+
+        .sidebar .menu-item li:hover {
+            color: #3c63ac;
+            background: rgba(60, 99, 172, 0.1);
+            transform: translateX(5px);
+            padding-left: 45px;
+        }
+
+        /* 修改活动状态的菜单项样式 */
+        .sidebar .menu-item.active h2 {
+            color: #3c63ac;
+            background: rgba(60, 99, 172, 0.1);
+        }
+
+        /* 删除之前冲突的悬停样式 */
+        .sidebar .menu-item h2:hover,
+        .sidebar .menu-item h2:focus {
+            transform: scale(1.05);
+        }
+
+        .sidebar .menu-item li:hover,
+        .sidebar .menu-item li:focus {
+            transform: translateX(5px);
+        }
+
+        /* 对话框样式 */
+        .dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 400px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .dialog h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .dialog-body {
+            margin: 20px 0;
+        }
+
+        .dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .file-upload {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload label {
+            cursor: pointer;
+            color: #3498db;
+        }
+
+        #fileName {
+            display: block;
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏部分 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <div class="menu-item-wrap">
+                <h2>船舶管理</h2>
+                <ul id="menu0">
+                    <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <div class="menu-item-wrap">
+                <h2>信息记录</h2>
+                <ul id="menu1">
+                    <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                    <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                    <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                    <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                    <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <div class="menu-item-wrap">
+                <h2>能效分析</h2>
+                <ul id="menu2">
+                    <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                    <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                    <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                    <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <div class="menu-item-wrap">
+                <h2>报表管理</h2>
+                <ul id="menu3">
+                    <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                    <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                    <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <div class="menu-item-wrap">
+                <h2>在职人员管理</h2>
+                <ul id="reportGen">
+                    <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                    <li onclick="window.location.href='当值记录表.html'">当值记录</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 页眉部分 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 搜索区域 -->
+        <div class="search-area">
+            <div class="search-group">
+                <div class="report-search-item">
+                    <label>船名：</label>
+                    <input type="text" placeholder="请输入船名">
+                </div>
+                <div class="report-search-item">
+                    <label>航次号：</label>
+                    <input type="text" placeholder="请输入航次号">
+                </div>
+                <div class="report-search-item">
+                    <label>出发港：</label>
+                    <input type="text" placeholder="请输入上一停靠港口">
+                </div>
+            </div>
+            <div class="search-group">
+                <div class="report-search-item">
+                    <label>目的港：</label>
+                    <input type="text" placeholder="请输入本次停靠港口">
+                </div>
+                <div class="report-search-item">
+                    <label>报告日期：</label>
+                    <div class="date-range-container">
+                        <input type="date" id="startDate">
+                        <span class="date-separator">至</span>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                <div class="report-search-actions">
+                    <button class="action-btn" onclick="searchReports()">
+                        <i class="fas fa-search"></i>
+                        搜索
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表格区域 -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <i class="fas fa-list"></i>
+                    <span>日报记录列表</span>
+                </div>
+                <div class="table-actions">
+                    <button class="action-btn import-btn" onclick="importDailyReport()">
+                        <i class="fas fa-file-import"></i>
+                        导入日报信息
+                    </button>
+                    <button class="action-btn export-btn" onclick="exportDailyReport()">
+                        <i class="fas fa-file-export"></i>
+                        导出日报信息
+                    </button>
+                    <button class="action-btn add-btn" onclick="showAddReportDialog()">
+                        <i class="fas fa-plus"></i>
+                        新增日报记录
+                    </button>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>船名</th>
+                        <th>航次号</th>
+                        <th>报告日期</th>
+                        <th>船位(NS)</th>
+                        <th>船位(EW)</th>
+                        <th>发港</th>
+                        <th>目的港</th>
+                        <th>预抵港时间</th>
+                        <th>预抵港时区</th>
+                        <th>信息缺失</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+
+            <!-- 分页控件 -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    <span>共 <span id="totalPages">0</span> 页，</span>
+                    <span><span id="totalRecords">0</span> 条记录</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="goToFirstPage()">首页</button>
+                    <button class="page-btn" onclick="goToPrevPage()">上一页</button>
+                    <span class="current-page">第 <span id="currentPage">1</span> 页</span>
+                    <button class="page-btn" onclick="goToNextPage()">下一页</button>
+                    <button class="page-btn" onclick="goToLastPage()">末页</button>
+                </div>
+                <div class="page-size-selector">
+                    每页显示：
+                    <select onchange="changePageSize(this.value)">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                    条
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入对话框 -->
+    <div id="importDialog" class="dialog" style="display: none;">
+        <div class="dialog-content">
+            <h3>导入日报信息</h3>
+            <div class="dialog-body">
+                <div class="file-upload">
+                    <input type="file" id="importFile" accept=".xlsx,.xls,.csv">
+                    <label for="importFile">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        选择文件
+                    </label>
+                    <span id="fileName">未选择文件</span>
+                </div>
+                <div class="import-preview">
+                    <table id="previewTable" style="display: none;">
+                        <!-- 预览内容将在这里动态生成 -->
+                    </table>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button onclick="confirmImport()" class="btn-primary">确认导入</button>
+                <button onclick="closeDialog('importDialog')" class="btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增日报对话框 -->
+    <div id="addReportDialog" class="dialog" style="display: none;">
+        <div class="dialog-content">
+            <h3>新增日报记录</h3>
+            <div class="dialog-body">
+                <form id="addReportForm">
+                    <div class="form-group">
+                        <label>船名：</label>
+                        <input type="text" name="shipName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>航次号：</label>
+                        <input type="text" name="voyageNo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>报告日期：</label>
+                        <input type="date" name="reportDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>船位(NS)：</label>
+                        <input type="text" name="positionNS" required>
+                    </div>
+                    <div class="form-group">
+                        <label>船位(EW)：</label>
+                        <input type="text" name="positionEW" required>
+                    </div>
+                    <div class="form-group">
+                        <label>发港：</label>
+                        <input type="text" name="departurePort" required>
+                    </div>
+                    <div class="form-group">
+                        <label>目的港：</label>
+                        <input type="text" name="destinationPort" required>
+                    </div>
+                    <div class="form-group">
+                        <label>预抵港时间：</label>
+                        <input type="datetime-local" name="eta" required>
+                    </div>
+                    <div class="form-group">
+                        <label>预抵港时区：</label>
+                        <select name="timezone" required>
+                            <option value="UTC+8">UTC+8</option>
+                            <option value="UTC+9">UTC+9</option>
+                            <option value="UTC+7">UTC+7</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="dialog-footer">
+                <button onclick="submitNewReport()" class="btn-primary">提交</button>
+                <button onclick="closeDialog('addReportDialog')" class="btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 定义一个数组来存储表格数据
+        let tableData = [];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认期
+            const today = new Date();
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = today;
+            
+            // 初始化表格数据
+            loadTableData();
+        });
+
+        // 修改 loadTableData 函数
+        function loadTableData() {
+            const tableBody = document.getElementById('reportTableBody');
+            tableBody.innerHTML = ''; // 清空现有表格内容
+            
+            // 遍历数据并创建表格行
+            tableData.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.shipName}</td>
+                    <td>${record.voyageNo}</td>
+                    <td>${record.reportDate}</td>
+                    <td>${record.positionNS}</td>
+                    <td>${record.positionEW}</td>
+                    <td>${record.departurePort}</td>
+                    <td>${record.destinationPort}</td>
+                    <td>${record.eta}</td>
+                    <td>${record.timezone}</td>
+                    <td>${record.missingInfo || '无'}</td>
+                    <td>
+                        <button onclick="editReport(${record.id})" class="action-btn">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteReport(${record.id})" class="action-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 搜索功能
+        function searchReports() {
+            // 这里添加搜索逻辑
+        }
+
+        // 导入导出功能
+        function importDailyReport() {
+            document.getElementById('importDialog').style.display = 'flex';
+        }
+
+        function exportDailyReport() {
+            // 获取表格数据
+            const tableData = getTableData();
+            
+            // 创建CSV内容
+            let csvContent = "船名,航次号,报告日期,船位(NS),船位(EW),发港,目的港,预抵港时间,预抵港时区\n";
+            tableData.forEach(row => {
+                csvContent += `${row.join(',')}\n`;
+            });
+
+            // 创建下载链接
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `日报记录_${new Date().toLocaleDateString()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 分页功能
+        function goToFirstPage() {
+            // 这里添加首页逻辑
+        }
+
+        function goToPrevPage() {
+            // 这里添加上一页逻辑
+        }
+
+        function goToNextPage() {
+            // 这里添加下一页逻辑
+        }
+
+        function goToLastPage() {
+            // 这里添加末页逻辑
+        }
+
+        function changePageSize(size) {
+            // 这里添加改变页面大小的逻辑
+        }
+
+        // 修改侧边栏动画效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有菜单项
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            menuItems.forEach(item => {
+                const title = item.querySelector('h2');
+                if (title) {
+                    title.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const menuId = item.querySelector('ul')?.id;
+                        if (menuId) {
+                            toggleMenuItem(menuId);
+                        }
+                    });
+                }
+            });
+        });
+
+        // 菜单切换函数
+        function toggleMenuItem(menuId) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const targetMenuItem = document.getElementById(menuId).closest('.menu-item');
+            
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            // 关闭其他打开的菜单项
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const subMenu = item.querySelector('ul');
+                    if (subMenu) {
+                        subMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            // 打开目标菜单项
+            targetMenuItem.classList.add('active');
+            const subMenu = targetMenuItem.querySelector('ul');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+
+        // 新增日报记录
+        function showAddReportDialog() {
+            document.getElementById('addReportDialog').style.display = 'flex';
+        }
+
+        // 关闭对话框
+        function closeDialog(dialogId) {
+            document.getElementById(dialogId).style.display = 'none';
+        }
+
+        // 提交新报���
+        function submitNewReport() {
+            const form = document.getElementById('addReportForm');
+            const formData = new FormData(form);
+            
+            // 表单验证
+            if (!validateForm(formData)) {
+                alert('请填写所有必填字段！');
+                return;
+            }
+
+            // 创建新记录对象
+            const newRecord = {
+                id: Date.now(), // 使用时间戳作为临时ID
+                shipName: formData.get('shipName'),
+                voyageNo: formData.get('voyageNo'),
+                reportDate: formData.get('reportDate'),
+                positionNS: formData.get('positionNS'),
+                positionEW: formData.get('positionEW'),
+                departurePort: formData.get('departurePort'),
+                destinationPort: formData.get('destinationPort'),
+                eta: formData.get('eta'),
+                timezone: formData.get('timezone'),
+                missingInfo: ''
+            };
+
+            // 添加新记录到数据数组
+            tableData.push(newRecord);
+            
+            // 重新加载表格
+            loadTableData();
+            
+            // 关闭对话框并重置表单
+            closeDialog('addReportDialog');
+            form.reset();
+            
+            // 显示成功提示
+            alert('日报记录添加成功！');
+        }
+
+        // 表单验证
+        function validateForm(formData) {
+            for (let [key, value] of formData.entries()) {
+                if (!value) return false;
+            }
+            return true;
+        }
+
+        // 文件导入处理
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || '未选择文件';
+            document.getElementById('fileName').textContent = fileName;
+        });
+
+        // 确认导入
+        function confirmImport() {
+            const file = document.getElementById('importFile').files[0];
+            if (!file) {
+                alert('请选择要导入的文件！');
+                return;
+            }
+
+            // 模拟文件导入
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // 这里应该解析文件内容并添加到 tableData
+                // 示例中添加一条模拟数据
+                const importedRecord = {
+                    id: Date.now(),
+                    shipName: '导入船舶',
+                    voyageNo: 'V001',
+                    reportDate: new Date().toISOString().split('T')[0],
+                    positionNS: 'N30°',
+                    positionEW: 'E120°',
+                    departurePort: '上海',
+                    destinationPort: '青岛',
+                    eta: '2024-03-20 14:00',
+                    timezone: 'UTC+8',
+                    missingInfo: ''
+                };
+                
+                tableData.push(importedRecord);
+                loadTableData();
+            };
+            reader.readAsText(file);
+
+            // 关闭对话框并重置
+            closeDialog('importDialog');
+            document.getElementById('importFile').value = '';
+            document.getElementById('fileName').textContent = '未选择文件';
+            alert('文件导入成功！');
+        }
+
+        // 获取表格数据（用于导出）
+        function getTableData() {
+            const table = document.getElementById('reportTableBody');
+            const data = [];
+            table.querySelectorAll('tr').forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('td').forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                if (rowData.length) data.push(rowData);
+            });
+            return data;
+        }
+
+        // 添加编辑和删除功能
+        function editReport(id) {
+            const record = tableData.find(item => item.id === id);
+            if (record) {
+                // 在这里实现编辑功能
+                console.log('编辑记录:', record);
+            }
+        }
+
+        function deleteReport(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                tableData = tableData.filter(item => item.id !== id);
+                loadTableData();
+            }
+        }
+    </script>
+</body>
+</html> 

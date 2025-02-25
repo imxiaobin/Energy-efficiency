@@ -1,0 +1,5092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>船舶航速优化</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- 添加 jQuery (如果需要) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            overflow-x: hidden; /* 只阻止水平滚动 */
+            box-sizing: border-box;
+        }
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100vh; /* 使用视口高度 */
+            overflow-y: auto; /* 允许侧边栏滚动 */
+            z-index: 1;
+            border-radius: 15px;
+            position: relative;
+            width: 220px;
+        }
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* 使用视口高度 */
+            overflow-y: auto; /* 允许主内容区域滚动 */
+            flex: 1; /* 占据剩余空间 */
+            padding: 20px; /* 添加内边距 */
+            max-width: 1400px; /* 限制最大宽度 */
+            margin: 0 auto; /* 居中显示 */
+        }
+
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px; /* 根据实际内容调整 */
+            transition: max-height 0.5s ease-in;
+        }
+
+        .search-area {
+            padding: 15px;
+            background: transparent;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .optimization-selection {
+            padding: 5px 15px;     /* 从 10px 20px 减小到 5px 15px */
+            margin-bottom: 5px;    /* 从 10px 减小到 5px */
+            overflow: visible;
+        }
+
+        .optimization-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;            /* 从 15px 减小到 10px */
+            padding: 3px;         /* 从 5px 减小到 3px */
+            margin: 5px 0;        /* 从 10px 0 减小到 5px 0 */
+            overflow: visible;
+        }
+
+        .optimization-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 15px;        /* 从 20px 减小到 15px */
+            display: flex;
+            align-items: center;
+            gap: 10px;           /* 从 15px 减小到 10px */
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.1),
+                0 1px 2px rgba(255, 255, 255, 0.3) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .optimization-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .optimization-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 1px 2px rgba(255, 255, 255, 0.4) inset;
+        }
+
+        .optimization-card:hover::before {
+            opacity: 1;
+        }
+
+        .optimization-card.active {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            box-shadow: 
+                0 8px 25px rgba(52, 152, 219, 0.2),
+                0 1px 2px rgba(255, 255, 255, 0.4) inset;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 
+                0 4px 15px rgba(52, 152, 219, 0.3),
+                0 1px 2px rgba(255, 255, 255, 0.3) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.2) 0%,
+                transparent 100%
+            );
+        }
+
+        .card-icon i {
+            color: white;
+            font-size: 22px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-content h3 {
+            color: #2c3e50;
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-content p {
+            color: #7f8c8d;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        @media (hover: hover) {
+            .optimization-card:hover .card-icon {
+                transform: scale(1.05);
+            }
+            
+            .optimization-card:hover .card-content h3 {
+                color: #3498db;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .optimization-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .optimization-card {
+                padding: 15px;
+            }
+            
+            .card-icon {
+                width: 42px;
+                height: 42px;
+            }
+            
+            .card-icon i {
+                font-size: 20px;
+            }
+            
+            .card-content h3 {
+                font-size: 16px;
+            }
+            
+            .card-content p {
+                font-size: 13px;
+            }
+        }
+
+        .optimization-content {
+            margin-top: 5px;     /* 添加较小的上边距 */
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease-out;
+            height: auto;
+        }
+
+        .route-optimization-inputs,
+        .trim-optimization-inputs,
+        .energy-optimization-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            height: 96px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+        }
+
+        .optimization-result {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-main h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .optimization-type {
+            padding: 6px 12px;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .time-info {
+            display: flex;
+            gap: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .result-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .result-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .card-header i {
+            font-size: 20px;
+        }
+
+        .speed-comparison {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .current-speed, .optimal-speed {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .speed-arrow {
+            color: #3498db;
+            font-size: 20px;
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .unit {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-left: 4px;
+        }
+
+        .label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .change-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .change-value.increase {
+            color: #27ae60;
+        }
+
+        .change-value.decrease {
+            color: #e74c3c;
+        }
+
+        .change-label {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .efficiency-data, .consumption-data, .time-data {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .efficiency-details, .time-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .result-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .time-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
+        .result-card.speed .card-icon {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .result-card.consumption .card-icon {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .result-card.efficiency .card-icon {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+
+        .result-card.time .card-icon {
+            background: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+
+        .card-info {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .info-value .unit {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+
+        .info-change {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .info-change.increase {
+            color: #2ecc71;
+        }
+
+        .info-change.decrease {
+            color: #e74c3c;
+        }
+
+        .info-change.neutral {
+            color: #7f8c8d;
+        }
+
+        .info-change i {
+            font-size: 12px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .result-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .result-card {
+                padding: 15px;
+            }
+
+            .card-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .info-value {
+                font-size: 20px;
+            }
+        }
+
+        /* 添加动画效果 */
+        .result-card {
+            animation: slideIn 0.5s ease-out;
+            animation-fill-mode: both;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 为每个卡片添加延迟动画 */
+        .result-card:nth-child(1) { animation-delay: 0.1s; }
+        .result-card:nth-child(2) { animation-delay: 0.2s; }
+        .result-card:nth-child(3) { animation-delay: 0.3s; }
+        .result-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            overflow: visible;
+        }
+
+        .overview-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: visible;
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .item-header i {
+            color: #3498db;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .item-content .unit {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+
+        .trend-indicator {
+            margin-left: auto;
+            font-size: 20px;
+        }
+
+        .trend-indicator i.increase {
+            color: #e74c3c;
+        }
+
+        .trend-indicator i.neutral {
+            color: #3498db;
+        }
+
+        .trend-indicator i.decrease {
+            color: #27ae60;
+        }
+
+        .speed-comparison {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+            padding: 0 10px;
+        }
+
+        .speed-card {
+            flex: 1;
+            min-width: 200px;
+            height: 135px;
+            padding: 20px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .speed-card.current {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+        }
+
+        .speed-card.optimized {
+            background: linear-gradient(145deg, #e6f3ff, #d9edff);
+            box-shadow: 8px 8px 16px #d1e3f0,
+                       -8px -8px 16px #ffffff;
+        }
+
+        .speed-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 12px 12px 20px #d1d1d1,
+                       -12px -12px 20px #ffffff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .card-header i {
+            font-size: 18px;
+        }
+
+        .current .card-header i {
+            color: #e74c3c;
+        }
+
+        .optimized .card-header i {
+            color: #27ae60;
+        }
+
+        .speed-value {
+            text-align: center;
+            padding: 15px 0;
+        }
+
+        .speed-value .value {
+            font-size: 42px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .speed-value .unit {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        .speed-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .current .speed-status {
+            color: #e74c3c;
+        }
+
+        .optimized .speed-status {
+            color: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .speed-comparison {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .speed-card {
+                width: 100%;
+            }
+        }
+
+        .speed-trend-chart {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+            margin-top: 20px;
+        }
+
+        .chart-header {
+            margin-bottom: 15px;
+        }
+
+        .chart-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-header h4 i {
+            color: #3498db;
+        }
+
+        #speedTrendChart {
+            height: 180px; /* 控制图表高度 */
+            width: 100%;
+        }
+
+        .speed-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .speed-trend-chart {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+        }
+
+        #speedTrendChart {
+            height: 180px;
+            width: 100%;
+        }
+
+        /* 修改输入区域的样式 */
+        .speed-optimization-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                       0 4px 12px rgba(52, 152, 219, 0.08);
+            overflow: visible;
+            margin-bottom: 20px;
+        }
+
+        /* 修改输入组的样式 */
+        .speed-optimization-inputs .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%; /* 确保宽度占满网格单元格 */
+        }
+
+        .input-group h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group select,
+        .input-group input {
+            padding: 8px 12px;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group select:hover,
+        .input-group input:hover {
+            border-color: rgba(52, 152, 219, 0.4);
+        }
+
+        .input-group select:focus,
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        /* 开始优化按钮容器样式 - 占据整行 */
+        .start-optimization {
+            /* 不再跨越所有列 */
+            grid-column: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* 将按钮对齐到底部 */
+            padding-bottom: 2px; /* 微调底部对齐 */
+        }
+
+        /* 修改按钮样式 */
+        .start-opt-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%; /* 占满容器宽度 */
+            min-width: 120px; /* 设置最小宽度 */
+            height: 40px; /* 设置固定高度，与输入框一致 */
+            padding: 0 15px; /* 调整内边距 */
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            white-space: nowrap; /* 防止文字换行 */
+            overflow: hidden; /* 隐藏溢出内容 */
+            text-overflow: ellipsis; /* 显示省略号 */
+        }
+
+        /* 调整按钮内部图标大小和间距 */
+        .start-opt-btn i {
+            font-size: 16px;
+            flex-shrink: 0; /* 防止图标被压缩 */
+        }
+
+        /* 添加按钮悬停效果 */
+        .start-opt-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #2471a3);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        /* 添加按钮点击效果 */
+        .start-opt-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        /* 修改输入组标题样式以保持一致性 */
+        .input-group h4 {
+            margin-bottom: 4px; /* 统一下间距 */
+            height: 20px; /* 固定标题高度 */
+        }
+
+        /* 修改输入框样式以保持一致性 */
+        .input-group select,
+        .input-group input {
+            height: 40px; /* 统一高度 */
+            box-sizing: border-box;
+        }
+
+        /* 响应式布局调整 */
+        @media (max-width: 1200px) {
+            .speed-optimization-inputs {
+                grid-template-columns: repeat(2, 1fr); /* 在中等屏幕上变为2列 */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .speed-optimization-inputs {
+                grid-template-columns: 1fr; /* 在小屏幕上变为1列 */
+                padding: 20px;
+                gap: 15px;
+            }
+
+            .start-optimization {
+                padding-top: 15px;
+                margin-top: 5px;
+            }
+        }
+
+        .optimization-scheme {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: visible;
+        }
+
+        .scheme-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+            overflow: visible;
+        }
+
+        .scheme-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: visible;
+        }
+
+        .scheme-card h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scheme-card h4 i {
+            color: #3498db;
+        }
+
+        .basis-section, .advice-section {
+            margin-bottom: 15px;
+        }
+
+        .basis-section ul, .advice-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .basis-section li, .advice-section li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .basis-section .label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .basis-section .value {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .advice-section li {
+            padding: 8px 0;
+            color: #2c3e50;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .advice-section li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+        }
+
+        .scheme-cards.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .scheme-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .scheme-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .scheme-card .card-header i {
+            color: #3498db;
+            font-size: 20px;
+        }
+
+        .scheme-card .card-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .scheme-card .card-content {
+            color: #34495e;
+        }
+
+        .scheme-card .card-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .scheme-card .card-content li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .scheme-card:nth-child(1) .card-header i {
+            color: #3498db;
+        }
+
+        .scheme-card:nth-child(2) .card-header i {
+            color: #2ecc71;
+        }
+
+        .scheme-card:nth-child(3) .card-header i {
+            color: #f1c40f;
+        }
+
+        .scheme-card:nth-child(4) .card-header i {
+            color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .scheme-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .basis-section {
+            margin-bottom: 15px;
+        }
+
+        .basis-section h5 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .basis-section h5 i {
+            color: #3498db;
+            width: 16px;
+        }
+
+        .basis-section ul {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 15px; /* 增加列间距 */
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+        }
+
+        .basis-section ul li {
+            white-space: nowrap; /* 防止文本换行 */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 超出显示省略号 */
+        }
+
+        .basis-section:nth-child(1) h5 i { color: #3498db; }  /* 气象 */
+        .basis-section:nth-child(2) h5 i { color: #2ecc71; }  /* 水象 */
+        .basis-section:nth-child(3) h5 i { color: #f1c40f; }  /* 燃料 */
+        .basis-section:nth-child(4) h5 i { color: #e74c3c; }  /* 动力 */
+        .basis-section:nth-child(5) h5 i { color: #9b59b6; }  /* 航行 */
+        .basis-section:nth-child(6) h5 i { color: #34495e; }  /* 姿态 */
+
+        .scheme-card .card-content {
+            max-height: 400px; /* 设置最大高度 */
+            overflow-y: auto; /* 添加垂直滚动 */
+        }
+
+        .scheme-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .scheme-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-top: 20px;
+            overflow: visible;
+        }
+
+        .scheme-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: visible;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: none;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #e74c3c;
+            transform: rotate(90deg);
+        }
+
+        .scheme-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .scheme-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .advice-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .advice-section h5 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .advice-section h5 i {
+            width: 16px;
+        }
+
+        .advice-section:nth-child(1) h5 i { color: #3498db; }  /* 航速 */
+        .advice-section:nth-child(2) h5 i { color: #f1c40f; }  /* 燃料 */
+        .advice-section:nth-child(3) h5 i { color: #e74c3c; }  /* 电堆 */
+        .advice-section:nth-child(4) h5 i { color: #2ecc71; }  /* 动力 */
+
+        .advice-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .advice-section ul li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+            font-size: 13px;
+        }
+
+        .effect-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .effect-section h5 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .effect-section h5 i {
+            width: 16px;
+        }
+
+        .effect-section:nth-child(1) h5 i { color: #f1c40f; }  /* 燃料 */
+        .effect-section:nth-child(2) h5 i { color: #e74c3c; }  /* 动力 */
+        .effect-section:nth-child(3) h5 i { color: #3498db; }  /* 船舶 */
+        .effect-section:nth-child(4) h5 i { color: #27ae60; }  /* 经济 */
+
+        .effect-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .effect-section ul li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+            font-size: 13px;
+        }
+
+        .scheme-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-scheme-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-scheme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .toggle-scheme-btn i {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle-scheme-btn.expanded i {
+            transform: rotate(180deg);
+        }
+
+        /* 优化效果对比模块样式 */
+        .optimization-comparison {
+            margin-top: 30px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+            overflow: visible;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .comparison-header h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-header h3 i {
+            color: #3498db;
+        }
+
+        /* 优化展开详情按钮样式 */
+        .toggle-comparison-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 20px;
+            background: transparent;
+            color: #3498db;
+            border: 2px solid #3498db;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .toggle-comparison-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .toggle-comparison-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .toggle-comparison-btn:hover::before {
+            opacity: 1;
+        }
+
+        .toggle-comparison-btn i,
+        .toggle-comparison-btn span {
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-comparison-btn.expanded {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        /* 优化对比卡片网格布局 */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-top: 20px;
+            overflow: visible;
+        }
+
+        /* 优化对比卡片样式 */
+        .comparison-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 优化表格样式 */
+        .comparison-table table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 15px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .comparison-table th {
+            font-weight: 600;
+            color: #2c3e50;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .comparison-table td {
+            color: #34495e;
+        }
+
+        /* 优化变化指标样式 */
+        .comparison-table .increase,
+        .comparison-table .decrease {
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .comparison-table .increase {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .comparison-table .decrease {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        /* 添加响应式布局 */
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-card {
+                margin-bottom: 20px;
+            }
+        }
+
+        /* 添加卡片动画效果 */
+        .comparison-grid {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-grid.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .comparison-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-grid.visible .comparison-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 为每个卡添加不同的延迟动画 */
+        .comparison-grid.visible .comparison-card:nth-child(1) { transition-delay: 0.1s; }
+        .comparison-grid.visible .comparison-card:nth-child(2) { transition-delay: 0.2s; }
+        .comparison-grid.visible .comparison-card:nth-child(3) { transition-delay: 0.3s; }
+        .comparison-grid.visible .comparison-card:nth-child(4) { transition-delay: 0.4s; }
+
+        /* 隐藏优化结果相关的div */
+        .optimization-result,
+        .optimization-scheme,
+        .optimization-comparison {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease-out;
+        }
+
+        .main-content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 20px; /* 为滚动条预留空间 */
+        }
+
+        .optimization-contents {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .optimization-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease-out;
+            width: 100%;
+            height: auto;
+        }
+
+        /* 面包屑导航样式 */
+        .breadcrumb-nav {
+            padding: 5px 15px;    /* 从 10px 20px 减小到 5px 15px */
+            margin-bottom: 5px;   /* 从 10px 减小到 5px */
+        }
+
+        .breadcrumb-list {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .breadcrumb-item a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #3498db;
+            transition: all 0.3s ease;
+            padding: 5px 8px;
+            border-radius: 4px;
+        }
+
+        .breadcrumb-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .breadcrumb-item i {
+            margin-right: 6px;
+            font-size: 14px;
+        }
+
+        .breadcrumb-item:not(:last-child)::after {
+            content: '/';
+            margin: 0 8px;
+            color: #95a5a6;
+        }
+
+        .breadcrumb-item.active {
+            color: #7f8c8d;
+            padding: 5px 8px;
+        }
+
+        .breadcrumb-item.active i {
+            color: #7f8c8d;
+        }
+
+        /* 修改原有header样式以适应面包屑 */
+        header {
+            display: flex;
+            flex-direction: column;
+            /* 删除 gap: 5px; */
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .breadcrumb-nav {
+                padding: 8px 15px;
+            }
+
+            .breadcrumb-item span {
+                font-size: 13px;
+            }
+
+            .breadcrumb-item:not(:last-child)::after {
+                margin: 0 5px;
+            }
+        }
+
+        /* 在现有的 style 标签中添加或确认以下样式 */
+
+        .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu-item.active ul {
+            max-height: 500px; /* 根据实际内容调整 */
+            transition: max-height 0.5s ease-in;
+        }
+
+        .menu-item li.active {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .sidebar .menu-item li a {
+            color: inherit;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 确保主内容区域默认显示 */
+        .main-content {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* 确保优化选择区域默认显示 */
+        .optimization-selection {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 优化内容区域的过渡效果 */
+        .optimization-content {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* 结果区域的过渡效果 */
+        .optimization-result,
+        .optimization-scheme,
+        .optimization-comparison {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* 确保优化内容区域正确显示 */
+        .optimization-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .optimization-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 确保输入区域正确显示 */
+        .speed-optimization-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                       0 4px 12px rgba(52, 152, 219, 0.08);
+            overflow: visible;
+            margin-bottom: 20px;
+        }
+
+        /* 优化卡片悬停效果 */
+        .optimization-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .optimization-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .optimization-card.active {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        /* 结果区域的显示样式 */
+        .optimization-result,
+        .optimization-scheme,
+        .optimization-comparison {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        /* 确保结果区域在显示时的样式正确 */
+        .optimization-result.visible,
+        .optimization-scheme.visible,
+        .optimization-comparison.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 添加过渡效果 */
+        .optimization-content {
+            transition: all 0.3s ease;
+        }
+
+        /* 结果区域的基础样式 */
+        .optimization-result,
+        .optimization-scheme,
+        .optimization-comparison {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* 确保内容区域可见 */
+        .optimization-content {
+            display: block;
+            opacity: 1;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* 输入区域样式 */
+        .speed-optimization-inputs {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* 添加按钮样式 */
+        .start-opt-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .start-opt-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .start-opt-btn i {
+            margin-right: 8px;
+        }
+
+        /* 确保输入区域可见 */
+        .speed-optimization-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 确保开始优化按钮容器正确显示 */
+        .start-optimization {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        /* 菜单项过渡效果 */
+        .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 菜单项激活状态样式 */
+        .menu-item.active > h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 子菜单项悬停效果 */
+        .menu-item ul li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 优化滚动条样式 */
+        .main-content-area::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content-area::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .main-content-area::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .main-content-area::-webkit-scrollbar-thumb:hover,
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .distance-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .distance-input input {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .distance-input .unit {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .input-group h4 i.fa-ruler-horizontal {
+            color: #e67e22;
+        }
+
+        /* 优化方案说明样式 */
+        .optimization-scheme {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .scheme-header {
+            margin-bottom: 20px;
+        }
+
+        .scheme-header h3 {
+            font-size: 18px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .scheme-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .scheme-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .scheme-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .scheme-card .card-header h4 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .advice-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .advice-list li {
+            padding: 8px 0;
+            color: #34495e;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .advice-list li:before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        /* 优化结果对比样式 */
+        .optimization-comparison {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .comparison-header {
+            margin-bottom: 20px;
+        }
+
+        .comparison-header h3 {
+            font-size: 18px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .comparison-item {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .comparison-item h4 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .comparison-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .before, .after {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .comparison-data .label {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .comparison-data .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .comparison-data .change {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            justify-content: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .speed-analysis {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .speed-trend-chart {
+            width: 100%;
+            height: 450px;
+        }
+
+        .chart-header {
+            margin-bottom: 20px;
+        }
+
+        .chart-header h4 {
+            font-size: 18px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        /* 优化内容区域样式 */
+        .optimization-contents {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* 输入区域样式调整 */
+        .speed-optimization-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                       0 4px 12px rgba(52, 152, 219, 0.08);
+            overflow: visible;
+            margin-bottom: 20px;
+        }
+
+        /* 结果区域布局调整 */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 结果卡片网格布局 */
+        .result-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        /* 优化方案说明和对比分析的布局 */
+        .analysis-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 结果容器样式 */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* 分析容器样式 */
+        .analysis-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 确保所有结果模块正确显示 */
+        .optimization-result.visible,
+        .optimization-scheme.visible,
+        .optimization-comparison.visible,
+        .speed-analysis.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 从船舶信息管理.html复制的侧边栏HTML结构 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2 onclick="toggleMenuItem('menuItem0')">船舶管理</h2>
+            <ul id="menu0">
+                <li><a href="船舶信息管理.html">船舶信息</a></li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2 onclick="toggleMenuItem('menuItem1')">信息记录</h2>
+            <ul id="menu1">
+                <li><a href="日报记录.html">日报记录</a></li>
+                <li><a href="航次记录.html">航次记录</a></li>
+                <li><a href="氢罐记录.html">储氢罐记录</a></li>
+                <li><a href="加氢记录.html">加氢记录</a></li>
+                <li><a href="在线监测记录.html">在线监测记录</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2 onclick="toggleMenuItem('menuItem2')">能效分析</h2>
+            <ul id="menu2">
+                <li><a href="能耗统计.html">能耗统计</a></li>
+                <li><a href="性能分析.html">性能分析</a></li>
+                <li><a href="能效计算器.html">能效计算器</a></li>
+                <li><a href="能效提升预测.html">能效提升预测</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2 onclick="toggleMenuItem('menuItem3')">报表管理</h2>
+            <ul id="menu3">
+                <li><a href="能耗记录表.html">能耗记录表</a></li>
+                <li><a href="能效管理计划.html">能效管理计划</a></li>
+                <li><a href="自定义报表.html">自定义报表</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2 onclick="toggleMenuItem('menuItemReportGen')">在职人员管理</h2>
+            <ul id="reportGen">
+                <li><a href="在职人员信息.html">在职人员信息</a></li>
+                <li><a href="当值记录表.html">当值记录表</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 在 header 的 navbar 之前添加面包屑导航 -->
+        <header>
+            <!-- 删除这部分
+            <div class="breadcrumb-nav">
+                <ul class="breadcrumb-list">
+                    <li class="breadcrumb-item">...</li>
+                    <li class="breadcrumb-item">...</li>
+                    <li class="breadcrumb-item active">...</li>
+                </ul>
+            </div>
+            -->
+            
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 修改主要内容区域的结构 -->
+        <div class="main-content-area">
+            <!-- 优化按钮组 -->
+            <div class="optimization-selection">
+                <div class="optimization-cards">
+                    <div class="optimization-card" data-type="speed">
+                        <div class="card-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶航速优化</h3>
+                            <p>基于航行数据优化船舶航速，提升能效表现</p>
+                        </div>
+                    </div>
+
+                    <div class="optimization-card" data-type="route">
+                        <div class="card-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶航线优化</h3>
+                            <p>智能规划最优航线，降低燃料消耗</p>
+                        </div>
+                    </div>
+
+                    <div class="optimization-card" data-type="trim">
+                        <div class="card-icon">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶纵倾优化</h3>
+                            <p>优化船舶纵倾状态，提升航行效率</p>
+                        </div>
+                    </div>
+
+                    <div class="optimization-card" data-type="energy">
+                        <div class="card-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>能量管理优化</h3>
+                            <p>优化能量分配策略，实现节能减排</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 将优化内容区域移到这里 -->
+            <div class="optimization-contents">
+                <!-- 速度优化内容区域 -->
+                <div id="speedContent" class="optimization-content">
+                    <!-- 输入栏部分 -->
+                    <div class="speed-optimization-inputs">
+                        <div class="input-group">
+                            <h4><i class="fas fa-sliders-h"></i> 优化目标</h4>
+                            <select id="optimizationGoal">
+                                <option value="economy">经济性优化</option>
+                                <option value="efficiency">效率优化</option>
+                                <option value="time">时间优化</option>
+                                <option value="comprehensive">综合优化</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <h4><i class="fas fa-ship"></i> 出发港口</h4>
+                            <select id="departurePort" onchange="updateDistance()">
+                                <option value="">请选择出发港</option>
+                                <option value="shanghai">上海港</option>
+                                <option value="ningbo">宁波港</option>
+                                <option value="qingdao">青岛港</option>
+                                <option value="tianjin">天津港</option>
+                                <option value="dalian">大连港</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <h4><i class="fas fa-map-marker-alt"></i> 目的港口</h4>
+                            <select id="destination" onchange="updateDistance()">
+                                <option value="">请选择目的港</option>
+                                <option value="shanghai">上海港</option>
+                                <option value="ningbo">宁波港</option>
+                                <option value="qingdao">青岛港</option>
+                                <option value="tianjin">天津港</option>
+                                <option value="dalian">大连港</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <h4><i class="fas fa-ruler-horizontal"></i> 航程距离 <span id="distanceValue">--</span> 海里</h4>
+                        </div>
+                        
+                        <div class="input-group">
+                            <h4><i class="fas fa-clock"></i> 计划出发时间</h4>
+                            <input type="datetime-local" id="departureTime">
+                        </div>
+                        
+                        <div class="input-group">
+                            <h4><i class="fas fa-clock"></i> 计划到港时间</h4>
+                            <input type="datetime-local" id="arrivalTime">
+                        </div>
+
+                        <div class="start-optimization">
+                            <button type="button" class="start-opt-btn">
+                                <i class="fas fa-play-circle"></i>
+                                开始优化
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 结果显示区域容器 -->
+                    <div class="results-container">
+                        <!-- 优化结果概览 -->
+                        <div class="optimization-result" style="display: none;">
+                            <div class="result-header">
+                                <div class="header-main">
+                                    <h3><i class="fas fa-chart-line"></i> 优化结果概览</h3>
+                                    <span class="optimization-type">综合优化</span>
+                                </div>
+                                <div class="time-info">
+                                    <span>出发: <span id="departurePlanned">--</span></span>
+                                    <span>到达: <span id="arrivalPlanned">--</span></span>
+                                </div>
+                            </div>
+                            <div class="result-cards">
+                                <!-- 航速卡片 -->
+                                <div class="result-card speed">
+                                    <div class="card-header">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        <h4>最优航速</h4>
+                                    </div>
+                                    <div class="card-info">
+                                        <div class="info-value">
+                                            <span id="optimalSpeedValue">--</span>
+                                            <span class="unit">kn</span>
+                                        </div>
+                                        <div id="speedChangeValue" class="info-change">--</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 燃料消耗卡片 -->
+                                <div class="result-card consumption">
+                                    <div class="card-header">
+                                        <i class="fas fa-gas-pump"></i>
+                                        <h4>燃料消耗</h4>
+                                    </div>
+                                    <div class="card-info">
+                                        <div class="info-value">
+                                            <span id="fuelConsumptionValue">--</span>
+                                            <span class="unit">kg/day</span>
+                                        </div>
+                                        <div id="consumptionChangeValue" class="info-change">--</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 系统效率卡片 -->
+                                <div class="result-card efficiency">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-pie"></i>
+                                        <h4>系统效率</h4>
+                                    </div>
+                                    <div class="card-info">
+                                        <div class="info-value">
+                                            <span id="efficiencyValue">--</span>
+                                            <span class="unit">%</span>
+                                        </div>
+                                        <div id="efficiencyChangeValue" class="info-change">--</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 航行时间卡片 -->
+                                <div class="result-card time">
+                                    <div class="card-header">
+                                        <i class="fas fa-clock"></i>
+                                        <h4>航行时间</h4>
+                                    </div>
+                                    <div class="card-info">
+                                        <div class="info-value">
+                                            <span id="travelTimeValue">--</span>
+                                            <span class="unit">h</span>
+                                        </div>
+                                        <div id="timeChangeValue" class="info-change">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分析区域容器 -->
+                        <div class="analysis-container">
+                            <!-- 优化方案说明 -->
+                            <div class="optimization-scheme" style="display: none;">
+                                <div class="scheme-header">
+                                    <h3><i class="fas fa-clipboard-check"></i> 优化方案说明</h3>
+                                </div>
+                                <div class="scheme-cards">
+                                    <!-- 三个建议卡片 -->
+                                </div>
+                            </div>
+
+                            <!-- 优化效果对比 -->
+                            <div class="optimization-comparison" style="display: none;">
+                                <div class="comparison-header">
+                                    <h3><i class="fas fa-chart-bar"></i> 优化效果对比</h3>
+                                </div>
+                                <div class="comparison-grid">
+                                    <!-- 对比内容将通过JavaScript动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 速度趋势分析 -->
+                        <div class="speed-analysis" style="display: none;">
+                            <div class="chart-header">
+                                <h4><i class="fas fa-chart-line"></i> 航速趋势分析</h4>
+                            </div>
+                            <div id="speedTrendChart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加加载动画 HTML -->
+    <div class="loading-animation" style="display: none;">
+        <div class="spinner"></div>
+        <div>正在计算优化方案...</div>
+    </div>
+
+    <!-- 添加辅助函数 -->
+    <script>
+        // 显示加载动画
+        function showLoadingAnimation() {
+            document.querySelector('.loading-animation').style.display = 'block';
+        }
+        
+        // 隐藏加载动画
+        function hideLoadingAnimation() {
+            document.querySelector('.loading-animation').style.display = 'none';
+        }
+        
+        // 生成速度数据
+        function generateSpeedData(baseSpeed, count, variation = 1) {
+            return Array.from({length: count}, () => 
+                baseSpeed + (Math.random() - 0.5) * variation
+            );
+        }
+    </script>
+
+    <script>
+        // 首先定义 ShipSpeedModel 类
+        class ShipSpeedModel {
+            constructor() {
+                // 扩展基础参数
+                this.parameters = {
+                    // 船舶基本参数
+                    shipLength: 0,      // 船长(m)
+                    shipWidth: 0,       // 船宽(m)
+                    shipDraft: 0,       // 吃水(m)
+                    displacement: 0,    // 排水量(t)
+                    blockCoefficient: 0.65, // 方形系数
+                    wetSurfaceCoefficient: 2.5, // 湿表面系数
+                    
+                    // 动力系统参数
+                    fuelCellPower: 0,    // 燃料电池功率(kW)
+                    propulsionEfficiency: 0,  // 推进效率
+                    motorEfficiency: 0.95,    // 电机效率
+                    fuelCellEfficiency: 0.55, // 燃料电池效率
+                    
+                    // 环境参数
+                    windSpeed: 0,     // 风速(kn)
+                    windDirection: 0,  // 风向(deg)
+                    waveHeight: 0,    // 浪高(m)
+                    current: 0,       // 水流速度(kn)
+                    waterDensity: 1025,  // 水密度(kg/m³)
+                    airDensity: 1.225,   // 空气密度(kg/m³)
+                    temperature: 15,      // 环境温度(℃)
+                    pressure: 101.325     // 大气压力(kPa)
+                };
+                
+                // 进一步放宽约束条件
+                this.constraints = {
+                    minSpeed: 4,          // 最小航速降低到 4 节
+                    maxSpeed: 20,         // 最大航速提高到 20 节
+                    maxPower: 2000,       // 最大功率提高到 2000 kW
+                    minEfficiency: 0.3,   // 最小系统效率降低到 0.3
+                    maxFuelConsumption: 500 // 最大日耗氢量提高到 500 kg/day
+                };
+                
+                // 优化目标权重
+                this.weights = {
+                    fuelConsumption: 0.4,
+                    time: 0.3,
+                    efficiency: 0.3
+                };
+                
+                // 添加模型训练器
+                this.trainer = new ModelTrainer();
+                this.isModelTrained = false;
+            }
+
+            // 添加初始化方法
+            async initialize() {
+                try {
+                    // 加载历史数据
+                    await this.trainer.loadHistoricalData();
+                    
+                    // 训练模型
+                    await this.trainer.trainModel();
+                    
+                    this.isModelTrained = true;
+                    return true;
+                } catch (error) {
+                    console.error('模型初始化失败:', error);
+                    return false;
+                }
+            }
+
+            // 修改最优航速计算方法
+            calculateOptimalSpeed(optimizationGoal, conditions) {
+                try {
+                    // 基准参数
+                    const baseSpeed = 12.5;
+                    const optimalEfficiencySpeed = 11.5;
+                    const maxSpeed = 14.0;
+                    const minSpeed = 9.0;
+                    
+                    // 根据不同优化目标计算最优速度
+                    let optimalSpeed;
+                    switch(optimizationGoal) {
+                        case 'economy':
+                            // 经济性优化 - 偏向较低速度以节省燃料
+                            optimalSpeed = calculateEconomicOptimalSpeed(conditions);
+                            break;
+                            
+                        case 'efficiency':
+                            // 效率优化 - 接近最佳效率速度点
+                            optimalSpeed = calculateEfficiencyOptimalSpeed(conditions);
+                            break;
+                            
+                        case 'time':
+                            // 时间优化 - 偏向较高速度
+                            optimalSpeed = calculateTimeOptimalSpeed(conditions);
+                            break;
+                            
+                        case 'comprehensive':
+                        default:
+                            // 综合优化 - 平衡各项指标
+                            optimalSpeed = calculateComprehensiveOptimalSpeed(conditions);
+                            break;
+                    }
+                    
+                    // 确保速度在合理范围内
+                    return Math.min(Math.max(optimalSpeed, minSpeed), maxSpeed);
+                    
+                } catch (error) {
+                    console.error('计算最优航速错误:', error);
+                    return 11.5; // 返回默认值
+                }
+            }
+
+            // 添加寻找最接近解的方法
+            findNearestSolution(distance, targetTime) {
+                let bestSolution = null;
+                let minViolation = Infinity;
+
+                for(let speed = this.constraints.minSpeed; speed <= this.constraints.maxSpeed; speed += 0.01) {
+                    try {
+                        const data = this.calculatePerformanceMetrics(speed, distance, targetTime);
+                        const violation = this.calculateConstraintViolation(data);
+                        
+                        if (violation < minViolation) {
+                            minViolation = violation;
+                            bestSolution = { speed, data };
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+                }
+
+                return bestSolution;
+            }
+
+            // 添加计算约束违反程度的方法
+            calculateConstraintViolation(data) {
+                const speedViolation = Math.max(
+                    0,
+                    this.constraints.minSpeed - data.speed,
+                    data.speed - this.constraints.maxSpeed
+                );
+
+                const powerViolation = Math.max(0, data.power - this.constraints.maxPower);
+                
+                const efficiencyViolation = Math.max(
+                    0,
+                    this.constraints.minEfficiency - data.efficiency
+                );
+
+                const fuelViolation = Math.max(
+                    0,
+                    data.fuelConsumption * 24 - this.constraints.maxFuelConsumption
+                );
+
+                return speedViolation + powerViolation + efficiencyViolation + fuelViolation;
+            }
+
+            // 添加参数验证方法
+            validateParameters() {
+                const requiredParams = [
+                    'shipLength', 'shipWidth', 'shipDraft', 'displacement',
+                    'fuelCellPower', 'propulsionEfficiency'
+                ];
+                
+                for (const param of requiredParams) {
+                    if (!this.parameters[param] || this.parameters[param] <= 0) {
+                        throw new Error(`参数 ${param} 无效`);
+                    }
+                }
+            }
+
+            // 修改性能指标计算方法
+            calculatePerformanceMetrics(speed, distance, targetTime) {
+                try {
+                    // 基础参数检查
+                    if (speed <= 0 || distance <= 0 || targetTime <= 0) {
+                        throw new Error('无效的输入参数');
+                    }
+
+                    // 计算航行时间（小时）
+                    const time = distance / speed;
+
+                    // 计算阻力（kN）
+                    const resistance = this.calculateResistance(speed);
+                    console.log('阻力计算结果:', resistance);
+
+                    // 计算所需功率（kW）
+                    const power = this.calculateRequiredPower(speed, resistance);
+                    console.log('功率计算结果:', power);
+
+                    // 计算系统效率
+                    const efficiency = this.calculateSystemEfficiency(power);
+                    console.log('效率计算结果:', efficiency);
+
+                    // 计算燃料消耗（kg/h）
+                    const fuelConsumption = this.calculateFuelConsumption(power, targetTime);
+                    console.log('燃料消耗计算结果:', fuelConsumption);
+
+                    // 确保所有计算结果在合理范围内
+                    const results = {
+                        speed: Math.min(Math.max(speed, 5), 20),
+                        resistance: Math.max(resistance, 0),
+                        power: Math.min(Math.max(power, 100), 2500),
+                        time: Math.max(time, targetTime * 0.8),
+                        efficiency: Math.min(Math.max(efficiency, 0.3), 0.95),
+                        fuelConsumption: Math.min(Math.max(fuelConsumption, 5), 50)
+                    };
+
+                    console.log('性能指标计算结果:', results);
+                    return results;
+
+                } catch (error) {
+                    console.error('性能指标计算错误:', error);
+                    throw error;
+                }
+            }
+
+            // 修改阻力计算方法，使其更稳定
+            calculateResistance(speed) {
+                try {
+                    console.log('开始计算阻力，速度:', speed);
+                    const speedMS = speed * 0.51444; // 转换节到米/秒
+                    
+                    // 计算各种阻力
+                    const frictionResistance = this.calculateFrictionalResistance(speedMS);
+                    console.log('摩擦阻力:', frictionResistance);
+                    
+                    const waveResistance = this.calculateWaveResistance(speedMS);
+                    console.log('波浪阻力:', waveResistance);
+                    
+                    const windResistance = this.calculateWindResistance();
+                    console.log('风阻:', windResistance);
+                    
+                    const currentResistance = this.calculateCurrentResistance();
+                    console.log('水流阻力:', currentResistance);
+                    
+                    // 确保所有阻力值都是有效的
+                    if (isNaN(frictionResistance) || isNaN(waveResistance) || 
+                        isNaN(windResistance) || isNaN(currentResistance)) {
+                        throw new Error('阻力计算结果包含无效值');
+                    }
+                    
+                    // 计算总阻力
+                    const totalResistance = Math.max(0,
+                        frictionResistance + 
+                        waveResistance + 
+                        windResistance + 
+                        currentResistance
+                    );
+                    
+                    // 添加安全系数
+                    const safetyFactor = 1.1;
+                    const finalResistance = totalResistance * safetyFactor;
+                    
+                    console.log('总阻力计算结果:', finalResistance);
+                    return finalResistance;
+                    
+                } catch (error) {
+                    console.error('阻力计算错误:', error);
+                    // 返回一个合理的默认值
+                    return this.calculateDefaultResistance(speed);
+                }
+            }
+
+            // 修改摩擦阻力计算方法
+            calculateFrictionalResistance(speedMS) {
+                try {
+                    const waterDensity = this.parameters.waterDensity;
+                    const kineticViscosity = 1.19e-6; // 水的运动粘度
+                    const wetSurfaceArea = this.calculateWetSurfaceArea();
+                    
+                    // 计算雷诺数
+                    const reynoldsNumber = (speedMS * this.parameters.shipLength) / kineticViscosity;
+                    
+                    // 计算摩擦系数
+                    const frictionCoefficient = 0.075 / Math.pow(Math.log10(reynoldsNumber) - 2, 2);
+                    
+                    // 计算摩擦阻力
+                    return 0.5 * waterDensity * Math.pow(speedMS, 2) * wetSurfaceArea * frictionCoefficient;
+                } catch (error) {
+                    console.error('摩擦阻力计算错误:', error);
+                    return 0;
+                }
+            }
+
+            // 修改波浪阻力计算方法
+            calculateWaveResistance(speedMS) {
+                try {
+                    const waterDensity = this.parameters.waterDensity;
+                    const gravity = 9.81;
+                    
+                    // 计算福劳德数
+                    const froudeNumber = speedMS / Math.sqrt(gravity * this.parameters.shipLength);
+                    
+                    // 简化的波浪阻力系数计算
+                    const waveResistanceCoefficient = 0.8 * Math.exp(-4 * Math.pow(froudeNumber - 0.3, 2));
+                    
+                    // 计算波浪阻力
+                    return 0.5 * waterDensity * Math.pow(speedMS, 2) * 
+                           this.parameters.shipLength * this.parameters.shipDraft * 
+                           waveResistanceCoefficient;
+                } catch (error) {
+                    console.error('波浪阻力计算错误:', error);
+                    return 0;
+                }
+            }
+
+            // 修改风阻计算方法
+            calculateWindResistance() {
+                try {
+                    const airDensity = this.parameters.airDensity;
+                    const windSpeed = this.parameters.windSpeed * 0.51444; // 转换节到米/秒
+                    const windResistanceCoefficient = 0.7;
+                    
+                    // 估算风阻面积
+                    const frontalArea = this.parameters.shipWidth * 
+                                      (this.parameters.shipDraft + 5); // 水线以上高度估计为5米
+                    
+                    return 0.5 * airDensity * Math.pow(windSpeed, 2) * 
+                           frontalArea * windResistanceCoefficient;
+                } catch (error) {
+                    console.error('风阻计算错误:', error);
+                    return 0;
+                }
+            }
+
+            // 修改水流阻力计算方法
+            calculateCurrentResistance() {
+                try {
+                    const waterDensity = this.parameters.waterDensity;
+                    const currentSpeed = this.parameters.current * 0.51444; // 转换节到米/秒
+                    const currentResistanceCoefficient = 0.6;
+                    
+                    // 计算水下面积
+                    const underwaterArea = this.parameters.shipLength * this.parameters.shipDraft;
+                    
+                    return 0.5 * waterDensity * Math.pow(currentSpeed, 2) * 
+                           underwaterArea * currentResistanceCoefficient;
+                } catch (error) {
+                    console.error('水流阻力计算错误:', error);
+                    return 0;
+                }
+            }
+
+            // 添加湿表面积计算方法
+            calculateWetSurfaceArea() {
+                try {
+                    // 使用简化的湿表面积计算公式
+                    const wetSurfaceArea = this.parameters.shipLength * 
+                                         (2 * this.parameters.shipDraft + this.parameters.shipWidth) * 
+                                         this.parameters.wetSurfaceCoefficient;
+                    return wetSurfaceArea;
+                } catch (error) {
+                    console.error('湿表面积计算错误:', error);
+                    // 返回一个基于船长和船宽的估计值
+                    return this.parameters.shipLength * this.parameters.shipWidth * 2;
+                }
+            }
+
+            // 添加默认阻力计算方法
+            calculateDefaultResistance(speed) {
+                // 使用简化的经验公式计算默认阻力
+                const defaultResistance = 100 * Math.pow(speed / 10, 2);
+                console.log('使用默认阻力值:', defaultResistance);
+                return defaultResistance;
+            }
+
+            // 修改功率计算方法
+            calculateRequiredPower(speed, resistance) {
+                try {
+                    const speedMS = speed * 0.51444;
+                    const effectivePower = resistance * speedMS;
+                    const shaftPower = effectivePower / (this.parameters.propulsionEfficiency || 0.65);
+                    const motorPower = shaftPower / (this.parameters.motorEfficiency || 0.92);
+                    
+                    // 确保功率在合理范围内
+                    return Math.min(Math.max(motorPower, 100), this.constraints.maxPower);
+                } catch (error) {
+                    console.error('功率计算错误:', error);
+                    return 500; // 返回一个默认值
+                }
+            }
+
+            // 修改系统效率计算方法
+            calculateSystemEfficiency(power) {
+                try {
+                    const fuelCellEfficiency = this.calculateFuelCellEfficiency(power);
+                    const totalEfficiency = Math.max(
+                        this.constraints.minEfficiency,
+                        fuelCellEfficiency * 
+                        (this.parameters.motorEfficiency || 0.95) * 
+                        (this.parameters.propulsionEfficiency || 0.6)
+                    );
+                    
+                    return totalEfficiency;
+                } catch (error) {
+                    console.error('效率计算错误:', error);
+                    throw error;
+                }
+            }
+
+            // 添加燃料电池效率计算方法
+            calculateFuelCellEfficiency(power) {
+                // 基于功率负载的简化效率模型
+                const loadFactor = power / this.parameters.fuelCellPower;
+                const baseEfficiency = this.parameters.fuelCellEfficiency;
+                
+                if (loadFactor < 0.2) {
+                    return baseEfficiency * 0.85; // 低负载效率降低
+                } else if (loadFactor > 0.9) {
+                    return baseEfficiency * 0.95; // 高负载效率略降
+                }
+                return baseEfficiency;
+            }
+
+            // 修改约束检查方法
+            checkConstraints(data) {
+                const tolerance = 0.3; // 增加到30%的容差
+                
+                const checks = {
+                    speed: {
+                        value: data.speed,
+                        min: this.constraints.minSpeed * (1 - tolerance),
+                        max: this.constraints.maxSpeed * (1 + tolerance),
+                        pass: false
+                    },
+                    power: {
+                        value: data.power,
+                        max: this.constraints.maxPower * (1 + tolerance),
+                        pass: false
+                    },
+                    efficiency: {
+                        value: data.efficiency,
+                        min: this.constraints.minEfficiency * (1 - tolerance),
+                        pass: false
+                    },
+                    fuelConsumption: {
+                        value: data.fuelConsumption * 24,
+                        max: this.constraints.maxFuelConsumption * (1 + tolerance),
+                        pass: false
+                    }
+                };
+
+                // 执行检查
+                checks.speed.pass = checks.speed.value >= checks.speed.min && 
+                                   checks.speed.value <= checks.speed.max;
+                
+                checks.power.pass = checks.power.value <= checks.power.max;
+                
+                checks.efficiency.pass = checks.efficiency.value >= checks.efficiency.min;
+                
+                checks.fuelConsumption.pass = checks.fuelConsumption.value <= checks.fuelConsumption.max;
+
+                console.log('约束检查详情:', checks);
+
+                // 放宽通过条件：只要有2个指标满足即可
+                const passCount = Object.values(checks).filter(check => check.pass).length;
+                return passCount >= 2;
+            }
+
+            // 修改成本计算方法
+            calculateTotalCost(data, targetTime) {
+                // 降低权重系数
+                const weights = {
+                    time: this.weights.time * 0.8,
+                    fuel: this.weights.fuelConsumption * 0.8,
+                    efficiency: this.weights.efficiency * 0.8
+                };
+
+                const timeCost = Math.abs(data.time - targetTime) * weights.time;
+                const fuelCost = (data.fuelConsumption / 24) * weights.fuel;
+                const efficiencyCost = (1 - data.efficiency) * weights.efficiency;
+                
+                // 降低惩罚项的权重
+                const powerPenalty = Math.max(0, data.power / this.parameters.fuelCellPower - 0.9) * 5;
+                const speedPenalty = Math.abs(data.speed - 12) * 0.05;
+                
+                return timeCost + fuelCost + efficiencyCost + powerPenalty + speedPenalty;
+            }
+
+            // 改进燃料消耗计算方法
+            calculateFuelConsumption(power, time) {
+                const fuelCellEfficiency = this.calculateFuelCellEfficiency(power);
+                const hydrogenEnergyDensity = 120; // MJ/kg
+                const powerKW = power / 1000; // 转换为kW
+                
+                // 考虑温度和压力的影响
+                const tempFactor = 1 + (this.parameters.temperature - 25) * 0.002;
+                const pressureFactor = this.parameters.pressure / 101.325;
+                
+                const consumption = (powerKW * time * 3.6) / 
+                                  (fuelCellEfficiency * hydrogenEnergyDensity * pressureFactor * tempFactor);
+                
+                return consumption;
+            }
+        }
+
+        // 然后是全局变量声明
+        let speedModel;
+
+        // 添加验证函数
+        function validateInputs(optimizationGoal, departurePort, destination, departureTime, arrivalTime) {
+            console.log('验证输入参数...'); // 调试日志
+            
+            if (!optimizationGoal || !departurePort || !destination || !departureTime || !arrivalTime) {
+                console.log('输入参数不完整'); // 调试日志
+                return false;
+            }
+            
+            // 验证出发时间和到达时间的合理性
+            const departureDate = new Date(departureTime);
+            const arrivalDate = new Date(arrivalTime);
+            
+            if (departureDate >= arrivalDate) {
+                console.log('时间验证失败：到达时间必须晚于出发时间'); // 调试日志
+                alert('到达时间必须晚于出发时间');
+                return false;
+            }
+            
+            console.log('验证通过'); // 调试日志
+            return true;
+        }
+
+        // 修改开始优化函数
+        function startOptimization() {
+            try {
+                console.log('开始优化计算...');
+                
+                // 获取输入参数
+                const departurePort = document.getElementById('departurePort').value;
+                const destinationPort = document.getElementById('destination').value;
+                const distance = getPortDistance(departurePort, destinationPort);
+                
+                if (!distance) {
+                    alert('请选择有效的出发港和目的港');
+                    return;
+                }
+                
+                const departureTime = document.getElementById('departureTime').value;
+                const arrivalTime = document.getElementById('arrivalTime').value;
+                const optimizationGoal = document.getElementById('optimizationGoal').value;
+                
+                // 验证输入
+                if (!validateInputs(optimizationGoal, departurePort, destinationPort, departureTime, arrivalTime)) {
+                    return;
+                }
+                
+                // 显示加载动画
+                showLoadingAnimation();
+                
+                // 使用setTimeout来模拟计算过程，并确保UI更新
+                setTimeout(() => {
+                    try {
+                        // 构建环境条件对象
+                        const conditions = {
+                            distance: distance,
+                            departureTime: new Date(departureTime),
+                            arrivalTime: new Date(arrivalTime),
+                            windSpeed: 15.0,
+                            windDirection: 45,
+                            waveHeight: 2.0,
+                            current: 0.5,
+                            temperature: 20,
+                            pressure: 101.325
+                        };
+
+                        // 计算最优航速
+                        const optimalSpeed = calculateOptimalSpeed(optimizationGoal, conditions);
+                        console.log('计算得到的最优航速:', optimalSpeed);
+
+                        // 生成优化建议
+                        const optimizationAdvice = generateOptimizationAdvice(optimalSpeed, conditions);
+                        
+                        // 隐藏加载动画
+                        hideLoadingAnimation();
+
+                        // 更新显示
+                        updateOptimizationDisplay(optimalSpeed, optimizationAdvice);
+                        
+                        // 显示结果区域
+                        document.querySelector('.optimization-result').style.display = 'block';
+                        document.querySelector('.optimization-scheme').style.display = 'block';
+                        document.querySelector('.optimization-comparison').style.display = 'block';
+                        
+                        // 更新图表
+                        initSpeedTrendChart(12.5, optimalSpeed);
+                        
+                    } catch (error) {
+                        console.error('优化计算错误:', error);
+                        hideLoadingAnimation();
+                        alert('优化计算出错: ' + error.message);
+                    }
+                }, 1000); // 1秒后执行计算结果
+                
+            } catch (error) {
+                console.error('优化计算错误:', error);
+                hideLoadingAnimation();
+                alert('优化计算出错: ' + error.message);
+            }
+        }
+
+        // 添加计算最优航速的函数
+        function calculateOptimalSpeed(optimizationGoal, conditions) {
+            switch(optimizationGoal) {
+                case 'economy':
+                    return calculateEconomicOptimalSpeed(conditions);
+                case 'efficiency':
+                    return calculateEfficiencyOptimalSpeed(conditions);
+                case 'time':
+                    return calculateTimeOptimalSpeed(conditions);
+                case 'comprehensive':
+                default:
+                    return calculateComprehensiveOptimalSpeed(conditions);
+            }
+        }
+
+        // 修改速度优化模型类
+        class SpeedOptimizationModel {
+            constructor() {
+                // 初始化模型参数
+                this.parameters = {
+                    windSpeed: 15.0,
+                    windDirection: 45,
+                    waveHeight: 2.0,
+                    current: 0.5,
+                    temperature: 20,
+                    pressure: 101.325
+                };
+                
+                this.constraints = {
+                    minSpeed: 9.0,
+                    maxSpeed: 14.0,
+                    maxFuelConsumption: 320,
+                    minEfficiency: 0.45
+                };
+            }
+            
+            calculateOptimalSpeed(optimizationGoal, conditions) {
+                try {
+                    // 更新模型参数
+                    this.parameters = { ...this.parameters, ...conditions };
+                    
+                    // 根据不同优化目标计算最优速度
+                    let optimalSpeed;
+                    switch(optimizationGoal) {
+                        case 'economy':
+                            optimalSpeed = calculateEconomicOptimalSpeed(this.parameters);
+                            break;
+                            
+                        case 'efficiency':
+                            optimalSpeed = calculateEfficiencyOptimalSpeed(this.parameters);
+                            break;
+                            
+                        case 'time':
+                            optimalSpeed = calculateTimeOptimalSpeed(this.parameters);
+                            break;
+                            
+                        case 'comprehensive':
+                        default:
+                            optimalSpeed = calculateComprehensiveOptimalSpeed(this.parameters);
+                            break;
+                    }
+                    
+                    // 确保速度在约束范围内
+                    optimalSpeed = Math.min(Math.max(optimalSpeed, this.constraints.minSpeed), this.constraints.maxSpeed);
+                    
+                    return optimalSpeed;
+                    
+                } catch (error) {
+                    console.error('计算最优航速错误:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // 修改生成优化建议函数
+        function generateOptimizationAdvice(optimalSpeed, conditions) {
+            const currentSpeed = 12.5;
+            const speedDiff = optimalSpeed - currentSpeed;
+            
+            return {
+                speedAdjustment: [
+                    `建议将航速从 ${currentSpeed} 调整至 ${optimalSpeed.toFixed(1)} 节`,
+                    `当前海况下的最优航速范围为 ${(optimalSpeed - 0.5).toFixed(1)} - ${(optimalSpeed + 0.5).toFixed(1)} 节`,
+                    speedDiff > 0 ? '建议适当增加主机功率' : '建议适当降低主机功率'
+                ],
+                fuelSystem: [
+                    '保持燃油温度在最佳范围内',
+                    '确保燃油过滤器正常工作',
+                    '监控燃油压力保持稳定'
+                ],
+                powerSystem: [
+                    '密切监控主机运行参数',
+                    '保持涡轮增压器效率',
+                    '确保冷却系统正常工作'
+                ]
+            };
+        }
+
+        // 修改 DOMContentLoaded 事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成');
+            
+            // 初始化页面
+            initializePage();
+            
+            // 绑定开始优化按钮事件
+            const startOptBtn = document.querySelector('.start-optimization button');
+            if (startOptBtn) {
+                console.log('找到开始优化按钮');
+                // 使用直接的点击事件处理
+                startOptBtn.onclick = function() {
+                    console.log('点击开始优化按钮');
+                    startOptimization();
+                };
+            } else {
+                console.error('未找到开始优化按钮，请检查选择器');
+            }
+
+            // 绑定优化卡片点击事件
+            const cards = document.querySelectorAll('.optimization-card');
+            console.log('找到优化卡片数量:', cards.length);
+            
+            cards.forEach(card => {
+                card.onclick = function() {
+                    const type = this.getAttribute('data-type');
+                    console.log('点击优化卡片:', type);
+                    showOptimizationContent(type);
+                };
+            });
+
+            // 初始化速度优化内容
+            showOptimizationContent('speed');
+        });
+
+        // 添加错误处理
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('Error: ' + msg + '\nURL: ' + url + '\nLine: ' + lineNo + '\nColumn: ' + columnNo + '\nError object: ' + JSON.stringify(error));
+            return false;
+        };
+
+        // 修复 initSpeedTrendChart 函数的语法错误和结构
+        function initSpeedTrendChart() {
+            const chart = echarts.init(document.getElementById('speedTrendChart'));
+            
+            const option = {
+                grid: {
+                    top: 30,
+                    right: 20,
+                    bottom: 20,
+                    left: 50,
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross'
+                    }
+                },
+                legend: {
+                    data: ['当前航速', '优化航速'],
+                    top: 0,
+                    right: 0
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+                    axisLine: {
+                        lineStyle: {
+                            color: '#7f8c8d'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '航速(kn)',
+                    min: 10,
+                    max: 14,
+                    interval: 1,
+                    axisLine: {
+                        lineStyle: {
+                            color: '#7f8c8d'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#eee'
+                        }
+                    }
+                },
+                series: [{
+                    name: '当前航速',
+                    type: 'line',
+                    smooth: true,
+                    data: [12.5, 12.3, 12.6, 12.4, 12.5, 12.7, 12.4],
+                    itemStyle: {
+                        color: '#e74c3c'
+                    },
+                    lineStyle: {
+                        width: 3
+                    }
+                }, {
+                    name: '优化航速',
+                    type: 'line',
+                    smooth: true,
+                    data: [11.8, 11.8, 11.9, 11.7, 11.8, 11.8, 11.8],
+                    itemStyle: {
+                        color: '#27ae60'
+                    },
+                    lineStyle: {
+                        width: 3
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+            
+            // 添加响应式支持
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 修改初始化函数
+        function initializePage() {
+            console.log('开始初始化页面');
+            
+            try {
+                // 显示主内容区域
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.style.display = 'flex';
+                    console.log('主内容区域已显示');
+                }
+
+                // 显示优化选择区域
+                const optimizationSelection = document.querySelector('.optimization-selection');
+                if (optimizationSelection) {
+                    optimizationSelection.style.display = 'block';
+                    console.log('优化选择区域已显示');
+                }
+
+                // 初始化速度优化内容
+                const speedContent = document.getElementById('speedContent');
+                if (speedContent) {
+                    speedContent.style.display = 'block';
+                    
+                    // 显示输入区域
+                    const inputArea = speedContent.querySelector('.speed-optimization-inputs');
+                    if (inputArea) {
+                        inputArea.style.display = 'grid';
+                        console.log('输入区域已显示');
+                    } else {
+                        console.error('未找到输入区域');
+                    }
+                    
+                    // 隐藏结果区域
+                    const resultElements = [
+                        speedContent.querySelector('.optimization-result'),
+                        speedContent.querySelector('.optimization-scheme'),
+                        speedContent.querySelector('.optimization-comparison')
+                    ];
+                    
+                    resultElements.forEach(element => {
+                        if (element) {
+                            element.style.display = 'none';
+                        }
+                    });
+                    
+                    console.log('速度优化内容已初始化');
+                } else {
+                    console.error('未找到速度优化内容区域');
+                }
+
+                // 激活默认卡片
+                const speedCard = document.querySelector('.optimization-card[data-type="speed"]');
+                if (speedCard) {
+                    speedCard.classList.add('active');
+                    console.log('默认卡片已激活');
+                }
+                
+                console.log('页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化错误:', error);
+            }
+        }
+
+        // 修改显示优化内容函数
+        function showOptimizationContent(type) {
+            console.log('显示内容类型:', type);
+            
+            try {
+                // 处理页面跳转
+                if (type !== 'speed') {
+                    const pageMap = {
+                        'route': '船舶航线优化.html',
+                        'trim': '船舶纵倾优化.html',
+                        'energy': '能量管理优化.html'
+                    };
+                    
+                    const targetPage = pageMap[type];
+                    if (targetPage) {
+                        console.log('跳转到页面:', targetPage);
+                        window.location.href = targetPage;
+                        return;
+                    }
+                }
+
+                // 以下是速度优化内容的显示逻辑
+                // 隐藏所有内容
+                document.querySelectorAll('.optimization-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+
+                // 移除所有卡片的激活状态
+                document.querySelectorAll('.optimization-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+
+                // 激活选中的卡片
+                const selectedCard = document.querySelector(`.optimization-card[data-type="${type}"]`);
+                if (selectedCard) {
+                    selectedCard.classList.add('active');
+                    console.log('已激活选中卡片');
+                }
+
+                // 显示对应内容
+                const content = document.getElementById(`${type}Content`);
+                if (content) {
+                    content.style.display = 'block';
+                    content.style.opacity = '1';
+                    
+                    // 如果是速度优化内容，确保输入区域显示
+                    if (type === 'speed') {
+                        const inputArea = content.querySelector('.speed-optimization-inputs');
+                        if (inputArea) {
+                            inputArea.style.display = 'grid';
+                            inputArea.style.opacity = '1';
+                            console.log('输入区域已显示');
+                        }
+
+                        // 隐藏结果区域
+                        const resultElements = [
+                            content.querySelector('.optimization-result'),
+                            content.querySelector('.optimization-scheme'),
+                            content.querySelector('.optimization-comparison')
+                        ];
+                        
+                        resultElements.forEach(element => {
+                            if (element) {
+                                element.style.display = 'none';
+                            }
+                        });
+                    }
+                    
+                    console.log(`${type}内容已显示`);
+                } else {
+                    console.error(`未找到${type}内容区域`);
+                }
+            } catch (error) {
+                console.error('显示内容错误:', error);
+            }
+        }
+
+        // 修改开始优化函数的显示逻辑
+        function showOptimizationResults() {
+            try {
+                console.log('显示优化结果');
+                
+                const resultElements = [
+                    document.querySelector('.optimization-result'),
+                    document.querySelector('.optimization-scheme'),
+                    document.querySelector('.optimization-comparison')
+                ];
+                
+                // 检查是否找到所有结果元素
+                const missingElements = resultElements.filter(element => !element);
+                if (missingElements.length > 0) {
+                    throw new Error('未找到部分结果显示元素');
+                }
+                
+                // 显示结果元素
+                resultElements.forEach((element, index) => {
+                    element.style.display = 'block';
+                    element.style.visibility = 'visible';
+                    
+                    // 使用 setTimeout 确保过渡效果
+                    setTimeout(() => {
+                        element.style.opacity = '1';
+                        element.style.transform = 'translateY(0)';
+                        
+                        // 特殊处理优化方案和对比模块
+                        if (element.classList.contains('optimization-scheme')) {
+                            const schemeCards = element.querySelector('.scheme-cards');
+                            if (schemeCards) schemeCards.classList.add('visible');
+                        }
+                        if (element.classList.contains('optimization-comparison')) {
+                            const comparisonGrid = element.querySelector('.comparison-grid');
+                            if (comparisonGrid) {
+                                comparisonGrid.style.display = 'grid';
+                                comparisonGrid.classList.add('visible');
+                            }
+                        }
+                    }, 50 * index);
+                });
+                
+            } catch (error) {
+                console.error('结果显示错误:', error);
+                throw error;
+            }
+        }
+
+        // 修改更新显示函数
+        function updateOptimizationDisplay(optimalSpeed, optimizationAdvice) {
+            try {
+                // 显示所有结果模块
+                const resultElements = [
+                    '.optimization-result',
+                    '.optimization-scheme',
+                    '.optimization-comparison',
+                    '.speed-analysis'
+                ];
+                
+                resultElements.forEach(selector => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.style.display = 'block';
+                        element.classList.add('visible');
+                    }
+                });
+
+                // 更新各模块的内容
+                updateOptimizationOverview(optimalSpeed);
+                updateAdviceContent(optimizationAdvice);
+                updateComparisonContent(optimalSpeed);
+                initSpeedTrendChart(12.5, optimalSpeed);
+                
+            } catch (error) {
+                console.error('更新显示错误:', error);
+            }
+        }
+
+        // 添加日期时间格式化函数
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return '--';
+            const date = new Date(dateTimeString);
+            return date.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 修改优化结果概览更新函数
+        function updateOptimizationOverview(optimalSpeed) {
+            try {
+                console.log('开始更新优化结果概览');
+                
+                // 获取优化目标
+                const optimizationGoal = document.getElementById('optimizationGoal').value;
+                
+                // 基准值设定
+                const baseSpeed = 12.5;  // 当前航速
+                const baseConsumption = 280;  // 基准燃料消耗
+                const baseEfficiency = 0.52;  // 基准系统效率
+                
+                // 获取距离
+                const distance = parseFloat(document.getElementById('distanceValue').textContent) || 580;
+                
+                // 1. 更新航速数据
+                const speedChange = ((optimalSpeed - baseSpeed) / baseSpeed * 100).toFixed(1);
+                const optimalSpeedElement = document.getElementById('optimalSpeedValue');
+                const speedChangeElement = document.getElementById('speedChangeValue');
+                
+                if (optimalSpeedElement) {
+                    optimalSpeedElement.textContent = optimalSpeed.toFixed(1);
+                }
+                
+                if (speedChangeElement) {
+                    speedChangeElement.innerHTML = `
+                        <i class="fas fa-${speedChange > 0 ? 'arrow-up' : 'arrow-down'}"></i>
+                        ${Math.abs(speedChange)}%
+                    `;
+                    speedChangeElement.className = `info-change ${speedChange > 0 ? 'increase' : 'decrease'}`;
+                }
+                
+                // 2. 更新燃料消耗数据
+                const fuelConsumption = calculateFuelConsumption(optimalSpeed, optimizationGoal);
+                const travelTime = calculateTravelTime(optimalSpeed, distance);
+                const fuelChange = ((baseConsumption - fuelConsumption) / baseConsumption * 100).toFixed(1);
+                
+                const fuelConsumptionElement = document.getElementById('fuelConsumptionValue');
+                const consumptionChangeElement = document.getElementById('consumptionChangeValue');
+                
+                if (fuelConsumptionElement) {
+                    fuelConsumptionElement.textContent = fuelConsumption.toFixed(0);
+                }
+                
+                if (consumptionChangeElement) {
+                    consumptionChangeElement.innerHTML = `
+                        <i class="fas fa-${fuelChange > 0 ? 'arrow-down' : 'arrow-up'}"></i>
+                        ${Math.abs(fuelChange)}%
+                    `;
+                    consumptionChangeElement.className = `info-change ${fuelChange > 0 ? 'decrease' : 'increase'}`;
+                }
+                
+                // 3. 更新效率数据
+                const efficiency = calculateSystemEfficiency(optimalSpeed, optimizationGoal);
+                const efficiencyChange = ((efficiency - baseEfficiency) / baseEfficiency * 100).toFixed(1);
+                
+                const efficiencyElement = document.getElementById('efficiencyValue');
+                const efficiencyChangeElement = document.getElementById('efficiencyChangeValue');
+                
+                if (efficiencyElement) {
+                    efficiencyElement.textContent = (efficiency * 100).toFixed(1);
+                }
+                
+                if (efficiencyChangeElement) {
+                    efficiencyChangeElement.innerHTML = `
+                        <i class="fas fa-${efficiencyChange > 0 ? 'arrow-up' : 'arrow-down'}"></i>
+                        ${Math.abs(efficiencyChange)}%
+                    `;
+                    efficiencyChangeElement.className = `info-change ${efficiencyChange > 0 ? 'increase' : 'decrease'}`;
+                }
+                
+                // 4. 更新时间数据
+                const baseTravelTime = distance / baseSpeed;
+                const timeChange = ((baseTravelTime - travelTime) / baseTravelTime * 100).toFixed(1);
+                
+                const travelTimeElement = document.getElementById('travelTimeValue');
+                const timeChangeElement = document.getElementById('timeChangeValue');
+                
+                if (travelTimeElement) {
+                    travelTimeElement.textContent = travelTime.toFixed(1);
+                }
+                
+                if (timeChangeElement) {
+                    timeChangeElement.innerHTML = `
+                        <i class="fas fa-${timeChange > 0 ? 'arrow-down' : 'arrow-up'}"></i>
+                        ${Math.abs(timeChange)}%
+                    `;
+                    timeChangeElement.className = `info-change ${timeChange > 0 ? 'decrease' : 'increase'}`;
+                }
+                
+                // 5. 更新优化类型
+                const optimizationTypeElement = document.querySelector('.optimization-type');
+                if (optimizationTypeElement) {
+                    optimizationTypeElement.textContent = getOptimizationGoalText(optimizationGoal);
+                }
+                
+                // 6. 显示结果区域
+                const resultElement = document.querySelector('.optimization-result');
+                if (resultElement) {
+                    resultElement.style.display = 'block';
+                }
+                
+                console.log('优化结果概览更新完成');
+                
+            } catch (error) {
+                console.error('更新优化结果显示错误:', error);
+            }
+        }
+
+        // 添加各种优化目标的结果计算函数
+        function calculateEconomyResults(baseResults, optimalSpeed) {
+            const results = {...baseResults};
+            
+            // 计算经济性优化的具体指标
+            results.consumption.value = calculateFuelConsumption(optimalSpeed) + ' kg/day';
+            results.consumption.change = '-15.2%';
+            results.consumption.trend = 'decrease';
+            
+            results.efficiency.value = '54.5%';
+            results.efficiency.change = '+2.8%';
+            
+            results.time.value = calculateTravelTime(optimalSpeed) + ' h';
+            results.time.change = '+5.3%';
+            results.time.trend = 'increase';
+            
+            return results;
+        }
+
+        function calculateEfficiencyResults(baseResults, optimalSpeed) {
+            const results = {...baseResults};
+            
+            // 计算效率优化的具体指标
+            results.efficiency.value = '58.2%';
+            results.efficiency.change = '+6.5%';
+            results.efficiency.trend = 'increase';
+            
+            results.consumption.value = calculateFuelConsumption(optimalSpeed) + ' kg/day';
+            results.consumption.change = '-8.5%';
+            
+            results.time.value = calculateTravelTime(optimalSpeed) + ' h';
+            results.time.change = '+2.1%';
+            
+            return results;
+        }
+
+        function calculateTimeResults(baseResults, optimalSpeed) {
+            const results = {...baseResults};
+            
+            // 计算时间优化的具体指标
+            results.time.value = calculateTravelTime(optimalSpeed) + ' h';
+            results.time.change = '-7.8%';
+            results.time.trend = 'decrease';
+            
+            results.consumption.value = calculateFuelConsumption(optimalSpeed) + ' kg/day';
+            results.consumption.change = '+12.4%';
+            results.consumption.trend = 'increase';
+            
+            results.efficiency.value = '52.3%';
+            results.efficiency.change = '-3.2%';
+            results.efficiency.trend = 'decrease';
+            
+            return results;
+        }
+
+        function calculateComprehensiveResults(baseResults, optimalSpeed) {
+            const results = {...baseResults};
+            
+            // 计算综合优化的具体指标
+            results.consumption.value = calculateFuelConsumption(optimalSpeed) + ' kg/day';
+            results.consumption.change = '-6.8%';
+            
+            results.efficiency.value = '55.8%';
+            results.efficiency.change = '+4.1%';
+            
+            results.time.value = calculateTravelTime(optimalSpeed) + ' h';
+            results.time.change = '-2.5%';
+            
+            return results;
+        }
+
+        // 添加辅助计算函数
+        function calculateFuelConsumption(speed) {
+            // 简化的燃料消耗计算模型
+            const baseConsumption = 280; // 基准消耗（kg/day）
+            const speedFactor = Math.pow(speed / 12.5, 3); // 速度的三次方关系
+            return baseConsumption * speedFactor;
+        }
+
+        function calculateTravelTime(speed, distance) {
+            return distance / speed; // 时间 = 距离/速度（小时）
+        }
+
+        // 添加获取优化目标文本的函数
+        function getOptimizationGoalText(goal) {
+            const goalTexts = {
+                'economy': '经济性优化',
+                'efficiency': '效率优化',
+                'time': '时间优化',
+                'comprehensive': '综合优化'
+            };
+            return goalTexts[goal] || '综合优化';
+        }
+
+        // 更新建议内容
+        function updateAdviceContent(advice) {
+            const speedAdviceList = document.querySelector('.speed-advice');
+            const fuelAdviceList = document.querySelector('.fuel-advice');
+            const powerAdviceList = document.querySelector('.power-advice');
+            
+            if (speedAdviceList) {
+                speedAdviceList.innerHTML = advice.speedAdjustment.map(item => `<li>${item}</li>`).join('');
+            }
+            
+            if (fuelAdviceList) {
+                fuelAdviceList.innerHTML = advice.fuelSystem.map(item => `<li>${item}</li>`).join('');
+            }
+            
+            if (powerAdviceList) {
+                powerAdviceList.innerHTML = advice.powerSystem.map(item => `<li>${item}</li>`).join('');
+            }
+        }
+
+        // 修改 initSpeedTrendChart 函数以接收当前速度和最优速度参数
+        function initSpeedTrendChart(currentSpeed, optimalSpeed) {
+            try {
+                const chartDom = document.getElementById('speedTrendChart');
+                if (!chartDom) {
+                    console.error('未找到图表容器元素');
+                    return;
+                }
+
+                const chart = echarts.init(chartDom);
+                
+                // 生成24小时的时间点
+                const timePoints = Array.from({length: 24}, (_, i) => 
+                    `${i.toString().padStart(2, '0')}:00`
+                );
+                
+                // 生成速度数据
+                const currentSpeedData = generateSpeedData(currentSpeed, 24);
+                const optimalSpeedData = generateSpeedData(optimalSpeed, 24, 0.5);
+                
+                const option = {
+                    title: {
+                        text: '24小时航速趋势对比',
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['当前航速', '优化航速'],
+                        top: 30
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: timePoints
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '航速(kn)'
+                    },
+                    series: [
+                        {
+                            name: '当前航速',
+                            type: 'line',
+                            data: currentSpeedData,
+                            smooth: true,
+                            lineStyle: {
+                                color: '#3498db'
+                            }
+                        },
+                        {
+                            name: '优化航速',
+                            type: 'line',
+                            data: optimalSpeedData,
+                            smooth: true,
+                            lineStyle: {
+                                color: '#2ecc71'
+                            }
+                        }
+                    ]
+                };
+                
+                chart.setOption(option);
+                
+                // 添加窗口大小改变时的自适应
+                window.addEventListener('resize', () => {
+                    chart.resize();
+                });
+                
+            } catch (error) {
+                console.error('图表初始化错误:', error);
+            }
+        }
+
+        // 生成模拟速度数据
+        function generateSpeedData(baseSpeed, count, variationRange = 0.8) {
+            return Array.from({length: count}, () => {
+                const variation = (Math.random() - 0.5) * 2 * variationRange;
+                return baseSpeed + variation;
+            });
+        }
+
+        // 添加 calculateWetSurfaceArea 方法到 ShipSpeedModel 类中
+        ShipSpeedModel.prototype.calculateWetSurfaceArea = function() {
+            // 简化的湿表面积计算公式
+            return 2.5 * this.parameters.shipLength * this.parameters.shipDraft;
+        };
+
+        // 添加 calculateWaveResistanceCoefficient 方法到 ShipSpeedModel 类中
+        ShipSpeedModel.prototype.calculateWaveResistanceCoefficient = function(froudeNumber) {
+            // 简化的波浪阻力系数计算
+            return 0.006 + 0.01 * Math.pow(froudeNumber, 2);
+        };
+
+        // 添加显示和隐藏加载动画的函数
+        function showLoadingAnimation() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading-animation';
+            loadingDiv.innerHTML = `
+                <div class="spinner"></div>
+                <p>正在计算优化方案...</p>
+            `;
+            document.body.appendChild(loadingDiv);
+        }
+
+        function hideLoadingAnimation() {
+            const loadingDiv = document.querySelector('.loading-animation');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // 添加错误检查函数
+        function checkModelCalculation(model, speed) {
+            if (!model || !model.parameters) {
+                throw new Error('模型未正确初始化');
+            }
+            
+            const resistance = model.calculateResistance(speed);
+            if (isNaN(resistance) || resistance <= 0) {
+                throw new Error('阻力计算结果无效');
+            }
+            
+            return true;
+        }
+
+        // 添加数据验证函数
+        function validateCalculationResults(optimalSpeed, currentSpeed) {
+            if (!optimalSpeed || isNaN(optimalSpeed)) {
+                throw new Error('最优航速计算结果无效');
+            }
+            
+            if (optimalSpeed < 8 || optimalSpeed > 14) {
+                throw new Error('最优航速超出合理范围');
+            }
+            
+            return true;
+        }
+
+        // 修改更新优化方案说明函数
+        function updateOptimizationScheme(optimizationAdvice) {
+            try {
+                const schemeSection = document.querySelector('.optimization-scheme');
+                if (!schemeSection) return;
+
+                // 更新优化目标描述
+                const goal = document.getElementById('optimizationGoal').value;
+                const goalDescriptions = {
+                    economy: {
+                        title: '经济性优化',
+                        description: '通过优化航速和动力系统参数，实现燃料消耗最小化',
+                        targets: [
+                            '日均氢耗降低10-15%',
+                            '单位里程能耗降低8-12%',
+                            '经济性指标提升15-20%'
+                        ]
+                    },
+                    efficiency: {
+                        title: '效率优化',
+                        description: '优化系统运行参数，实现能源利用效率最大化',
+                        targets: [
+                            '系统综合效率提升4-6%',
+                            '燃料电池工作点优化',
+                            '动力系统匹配度提升'
+                        ]
+                    },
+                    time: {
+                        title: '时间优化',
+                        description: '在保证安全和合理能耗的前提下，实现航行时间最短',
+                        targets: [
+                            '航行时间缩短5-8%',
+                            '平均航速提升',
+                            '到港时间可靠性提升'
+                        ]
+                    }
+                };
+
+                const selectedGoal = goalDescriptions[goal] || goalDescriptions.economy;
+
+                // 更新显示内容
+                let content = `
+                    <div class="scheme-header">
+                        <h3><i class="fas fa-clipboard-check"></i> ${selectedGoal.title}</h3>
+                    </div>
+                    <div class="scheme-content">
+                        <p class="scheme-description">${selectedGoal.description}</p>
+                        <div class="scheme-targets">
+                            <h4>优化目标</h4>
+                            <ul>
+                                ${selectedGoal.targets.map(target => `<li>${target}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="scheme-recommendations">
+                            <h4>优化建议</h4>
+                            <div class="recommendations-grid">
+                                ${generateRecommendations(optimizationAdvice)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                schemeSection.innerHTML = content;
+                schemeSection.style.display = 'block';
+            } catch (error) {
+                console.error('更新优化方案说明错误:', error);
+            }
+        }
+
+        // 生成优化建议内容
+        function generateRecommendations(advice) {
+            return `
+                <div class="recommendation-card">
+                    <div class="card-header">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <h5>航速调整</h5>
+                    </div>
+                    <ul>
+                        ${advice.speedAdjustment.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="recommendation-card">
+                    <div class="card-header">
+                        <i class="fas fa-gas-pump"></i>
+                        <h5>燃料系统</h5>
+                    </div>
+                    <ul>
+                        ${advice.fuelSystem.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="recommendation-card">
+                    <div class="card-header">
+                        <i class="fas fa-bolt"></i>
+                        <h5>动力系统</h5>
+                    </div>
+                    <ul>
+                        ${advice.powerSystem.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        // 修改更新优化目标函数
+        function updateOptimizationGoal() {
+            const optimizationDescription = document.getElementById('optimizationDescription');
+            if (optimizationDescription) {
+                const goal = document.getElementById('optimizationGoal').value;
+                const descriptions = {
+                    economy: {
+                        main: '以最小化燃料消耗为主要目标，在保证到港时间的前提下，实现经济性最优',
+                        details: [
+                            '降低日均氢耗10-15%',
+                            '优化燃料电池工作点效率',
+                            '平衡航行时间与燃料消耗'
+                        ]
+                    },
+                    efficiency: {
+                        main: '以最大化系统效率为主要目标，优化燃料电池工作点，实现能源利用效率最优',
+                        details: [
+                            '提升系统综合效率4-6%',
+                            '优化动力系统负载分配',
+                            '维持设备最佳工作状态'
+                        ]
+                    },
+                    time: {
+                        main: '以最短航行时间为主要目标，在保证安全和合理能耗的前提下，实现时间最优',
+                        details: [
+                            '缩短航行时间5-8%',
+                            '优化航速动态调整策略',
+                            '确保燃料消耗在合理范围'
+                        ]
+                    },
+                    comprehensive: {
+                        main: '综合考虑经济性、效率和时间因素，实现多目标平衡优化',
+                        details: [
+                            '平衡燃料消耗与航行时间',
+                            '保持系统效率在较高水平',
+                            '实现综合性能最优化'
+                        ]
+                    }
+                };
+
+                const selectedGoal = descriptions[goal] || descriptions.comprehensive;
+                
+                // 更新描述内容
+                let content = `
+                    <div class="goal-description">
+                        <p class="main-goal">${selectedGoal.main}</p>
+                        <ul class="goal-details">
+                            ${selectedGoal.details.map(detail => `<li>${detail}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                
+                optimizationDescription.innerHTML = content;
+                optimizationDescription.style.display = 'block';
+            }
+        }
+
+        // 修改更新优化依据函数
+        function updateOptimizationBasis() {
+            // 更新气象条件
+            const weatherData = {
+                '风速': {
+                    value: speedModel.parameters.windSpeed + ' kn',
+                    impact: getWeatherImpact('wind', speedModel.parameters.windSpeed)
+                },
+                '风向': {
+                    value: getWindDirection(speedModel.parameters.windDirection),
+                    impact: getWeatherImpact('windDirection', speedModel.parameters.windDirection)
+                },
+                '温度': {
+                    value: speedModel.parameters.temperature + ' ℃',
+                    impact: getWeatherImpact('temperature', speedModel.parameters.temperature)
+                },
+                '气压': {
+                    value: speedModel.parameters.pressure + ' kPa',
+                    impact: getWeatherImpact('pressure', speedModel.parameters.pressure)
+                }
+            };
+            updateBasisSection('weather', weatherData, '气象条件');
+
+            // 更新水象条件
+            const seaData = {
+                '浪高': {
+                    value: speedModel.parameters.waveHeight + ' m',
+                    impact: getWeatherImpact('wave', speedModel.parameters.waveHeight)
+                },
+                '浪向': {
+                    value: getWaveDirection(315), // 示例值
+                    impact: getWeatherImpact('waveDirection', 315)
+                },
+                '水温': {
+                    value: '15 ℃',
+                    impact: getWeatherImpact('waterTemp', 15)
+                },
+                '水流': {
+                    value: speedModel.parameters.current + ' kn',
+                    impact: getWeatherImpact('current', speedModel.parameters.current)
+                }
+            };
+            updateBasisSection('sea', seaData, '水象条件');
+
+            // 更新船舶状态
+            const shipData = {
+                '吃水': {
+                    value: speedModel.parameters.shipDraft + ' m',
+                    impact: getShipImpact('draft', speedModel.parameters.shipDraft)
+                },
+                '排水量': {
+                    value: speedModel.parameters.displacement + ' t',
+                    impact: getShipImpact('displacement', speedModel.parameters.displacement)
+                },
+                '纵倾': {
+                    value: '0.5 m',  // 示例值
+                    impact: getShipImpact('trim', 0.5)
+                }
+            };
+            updateBasisSection('ship', shipData, '船舶状态');
+        }
+
+        // 添加获取影响评估的辅助函数
+        function getWeatherImpact(type, value) {
+            const impacts = {
+                wind: (v) => {
+                    if (v <= 10) return { level: 'low', text: '影响较小' };
+                    if (v <= 20) return { level: 'medium', text: '需要注意' };
+                    return { level: 'high', text: '影响显著' };
+                },
+                wave: (v) => {
+                    if (v <= 1.0) return { level: 'low', text: '影响较小' };
+                    if (v <= 2.5) return { level: 'medium', text: '需要注意' };
+                    return { level: 'high', text: '影响显著' };
+                },
+                // ... 其他天气因素的影响评估
+            };
+            
+            return (impacts[type] ? impacts[type](value) : { level: 'normal', text: '影响正常' });
+        }
+
+        // 修改更新基础数据区域函数
+        function updateBasisSection(type, data, title) {
+            const section = document.querySelector(`.basis-section[data-type="${type}"]`);
+            if (!section) return;
+
+            let content = `<h4><i class="${getTypeIcon(type)}"></i>${title}</h4><ul>`;
+            
+            for (const [key, info] of Object.entries(data)) {
+                content += `
+                    <li>
+                        <div class="basis-item">
+                            <span class="label">${key}:</span>
+                            <span class="value">${info.value}</span>
+                            <span class="impact ${info.impact.level}">${info.impact.text}</span>
+                        </div>
+                    </li>
+                `;
+            }
+            content += '</ul>';
+
+            section.innerHTML = content;
+            section.style.display = 'block';
+        }
+
+        // 添加获取图标的辅助函数
+        function getTypeIcon(type) {
+            const icons = {
+                weather: 'fas fa-cloud',
+                sea: 'fas fa-water',
+                ship: 'fas fa-ship'
+            };
+            return icons[type] || 'fas fa-info-circle';
+        }
+
+        // 添加更新预期效果函数
+        function updateExpectedResults() {
+            const resultsSection = document.querySelector('.expected-results');
+            if (!resultsSection) return;
+
+            const goal = document.getElementById('optimizationGoal').value;
+            const expectedResults = calculateExpectedResults(goal);
+
+            let content = `
+                <h4><i class="fas fa-chart-line"></i>预期效果</h4>
+                <div class="results-grid">
+                    ${Object.entries(expectedResults).map(([key, value]) => `
+                        <div class="result-item ${value.trend}">
+                            <div class="result-label">${value.label}</div>
+                            <div class="result-value">${value.value}</div>
+                            <div class="result-trend">${value.trendIcon} ${value.trendText}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            resultsSection.innerHTML = content;
+            resultsSection.style.display = 'block';
+        }
+
+        // 添加计算预期效果的函数
+        function calculateExpectedResults(goal) {
+            // 基于优化目标计算预期效果
+            const baseResults = {
+                fuelSaving: {
+                    label: '燃料节省',
+                    value: '12.5%',
+                    trend: 'decrease',
+                    trendIcon: '↓',
+                    trendText: '显著降低'
+                },
+                efficiency: {
+                    label: '系统效率',
+                    value: '55.8%',
+                    trend: 'increase',
+                    trendIcon: '↑',
+                    trendText: '明显提升'
+                },
+                time: {
+                    label: '航行时间',
+                    value: '49.2h',
+                    trend: 'neutral',
+                    trendIcon: '→',
+                    trendText: '基本持平'
+                }
+            };
+
+            // 根据不同优化目标调整预期效果
+            switch(goal) {
+                case 'economy':
+                    baseResults.fuelSaving.value = '15.0%';
+                    break;
+                case 'efficiency':
+                    baseResults.efficiency.value = '58.2%';
+                    break;
+                case 'time':
+                    baseResults.time.value = '46.8h';
+                    baseResults.time.trend = 'decrease';
+                    break;
+            }
+
+            return baseResults;
+        }
+
+        // 添加更新优化建议函数
+        function updateOptimizationAdvice(advice) {
+            if (!advice) return;
+
+            const sections = {
+                speed: {
+                    title: '航速调整建议',
+                    items: advice.speedAdjustment
+                },
+                fuel: {
+                    title: '燃料系统建议',
+                    items: advice.fuelSystem
+                },
+                power: {
+                    title: '动力系统建议',
+                    items: advice.powerSystem
+                }
+            };
+
+            for (const [type, data] of Object.entries(sections)) {
+                const section = document.querySelector(`.advice-section[data-type="${type}"]`);
+                if (section) {
+                    let content = `<h4>${data.title}</h4><ul>`;
+                    data.items.forEach(item => {
+                        content += `<li>${item}</li>`;
+                    });
+                    content += '</ul>';
+                    
+                    section.innerHTML = content;
+                    section.style.display = 'block';
+                }
+            }
+        }
+
+        // 添加更新优化效果对比函数
+        function updateOptimizationComparison(optimalSpeed) {
+            const currentSpeed = 12.5; // 当前航速
+            
+            // 计算各项指标的变化
+            const fuelConsumptionChange = ((currentSpeed - optimalSpeed) / currentSpeed * 100).toFixed(1);
+            const efficiencyChange = ((optimalSpeed / currentSpeed - 1) * 100).toFixed(1);
+            const timeChange = ((currentSpeed / optimalSpeed - 1) * 100).toFixed(1);
+            
+            // 更新燃料系统对比
+            updateComparisonTable('fuel-system', {
+                dailyConsumption: {
+                    before: '280',
+                    after: '246',
+                    change: '-12.1'
+                },
+                fuelEfficiency: {
+                    before: '82',
+                    after: '87',
+                    change: '6.1'
+                },
+                systemEfficiency: {
+                    before: '51.2',
+                    after: '55.8',
+                    change: '9.0'
+                }
+            });
+
+            // 更新动力系统对比
+            updateComparisonTable('power-system', {
+                power: {
+                    before: '980',
+                    after: '920',
+                    change: '-6.1'
+                },
+                voltage: {
+                    before: '625',
+                    after: '645',
+                    change: '3.2'
+                },
+                motorEfficiency: {
+                    before: '95.0',
+                    after: '96.2',
+                    change: '1.3'
+                }
+            });
+
+            // 显示对比网格
+            const comparisonGrid = document.querySelector('.comparison-grid');
+            if (comparisonGrid) {
+                comparisonGrid.style.display = 'grid';
+                comparisonGrid.classList.add('visible');
+            }
+        }
+
+        // 添加更新对比表格函数
+        function updateComparisonTable(tableId, data) {
+            const table = document.querySelector(`#${tableId} table tbody`);
+            if (!table) return;
+
+            Object.entries(data).forEach(([key, values]) => {
+                const row = table.querySelector(`tr[data-param="${key}"]`);
+                if (row) {
+                    const cells = row.querySelectorAll('td');
+                    cells[1].textContent = values.before;
+                    cells[2].textContent = values.after;
+                    
+                    const changeCell = cells[3];
+                    const change = parseFloat(values.change);
+                    changeCell.textContent = `${change > 0 ? '↑' : '↓'}${Math.abs(change)}%`;
+                    changeCell.className = change > 0 ? 'increase' : 'decrease';
+                }
+            });
+        }
+
+        // 添加历史数据训练类
+        class ModelTrainer {
+            constructor() {
+                this.historicalData = [];
+                this.trainingResults = {
+                    speedPatterns: {},
+                    efficiencyPatterns: {},
+                    consumptionPatterns: {}
+                };
+            }
+
+            // 加载历史数据
+            async loadHistoricalData() {
+                try {
+                    // 这里可以从服务器或本地存储加载实际的历史数据
+                    // 示例数据结构
+                    this.historicalData = [
+                        {
+                            // 航行条件
+                            conditions: {
+                                distance: 580,
+                                shipLength: 135,
+                                shipWidth: 23.6,
+                                shipDraft: 5.8,
+                                displacement: 12500,
+                                windSpeed: 12,
+                                windDirection: 315,
+                                waveHeight: 1.5,
+                                current: 2.1,
+                                temperature: 15,
+                                pressure: 101.325
+                            },
+                            // 实际记录
+                            records: {
+                                speed: 11.8,
+                                fuelConsumption: 246,
+                                efficiency: 0.558,
+                                power: 920
+                            },
+                            // 性能指标
+                            performance: {
+                                fuelEfficiency: 0.87,
+                                systemEfficiency: 0.558,
+                                economicIndex: 0.92
+                            }
+                        },
+                        // ... 更多历史数据
+                    ];
+
+                    // 生成模拟数据用于训练
+                    this.generateSimulatedData(1000); // 生成1000条模拟数据
+                    
+                    return true;
+                } catch (error) {
+                    console.error('加载历史数据失败:', error);
+                    return false;
+                }
+            }
+
+            // 生成模拟数据
+            generateSimulatedData(count) {
+                for (let i = 0; i < count; i++) {
+                    const baseConditions = this.historicalData[0].conditions;
+                    const simulatedData = {
+                        conditions: {
+                            distance: baseConditions.distance + this.randomVariation(50),
+                            shipLength: baseConditions.shipLength,
+                            shipWidth: baseConditions.shipWidth,
+                            shipDraft: baseConditions.shipDraft + this.randomVariation(0.3),
+                            displacement: baseConditions.displacement + this.randomVariation(500),
+                            windSpeed: baseConditions.windSpeed + this.randomVariation(5),
+                            windDirection: (baseConditions.windDirection + this.randomVariation(45)) % 360,
+                            waveHeight: baseConditions.waveHeight + this.randomVariation(0.5),
+                            current: baseConditions.current + this.randomVariation(0.5),
+                            temperature: baseConditions.temperature + this.randomVariation(5),
+                            pressure: baseConditions.pressure + this.randomVariation(2)
+                        },
+                        records: this.generateSimulatedRecords(baseConditions),
+                        performance: this.generateSimulatedPerformance()
+                    };
+                    this.historicalData.push(simulatedData);
+                }
+            }
+
+            // 生成随机变化
+            randomVariation(range) {
+                return (Math.random() - 0.5) * 2 * range;
+            }
+
+            // 生成模拟记录
+            generateSimulatedRecords(conditions) {
+                const baseSpeed = 11.8;
+                const basePower = 920;
+                const baseConsumption = 246;
+
+                // 考虑环境因素的影响
+                const windEffect = conditions.windSpeed * 0.02;
+                const waveEffect = conditions.waveHeight * 0.05;
+                const currentEffect = conditions.current * 0.03;
+
+                return {
+                    speed: baseSpeed * (1 + this.randomVariation(0.1) - windEffect - waveEffect - currentEffect),
+                    fuelConsumption: baseConsumption * (1 + this.randomVariation(0.15) + windEffect + waveEffect),
+                    efficiency: 0.558 * (1 + this.randomVariation(0.05)),
+                    power: basePower * (1 + this.randomVariation(0.1) + windEffect + waveEffect)
+                };
+            }
+
+            // 生成模拟性能数据
+            generateSimulatedPerformance() {
+                return {
+                    fuelEfficiency: 0.87 * (1 + this.randomVariation(0.05)),
+                    systemEfficiency: 0.558 * (1 + this.randomVariation(0.03)),
+                    economicIndex: 0.92 * (1 + this.randomVariation(0.08))
+                };
+            }
+
+            // 训练模型
+            async trainModel() {
+                try {
+                    console.log('开始训练模型...');
+                    
+                    // 分析速度模式
+                    this.analyzeSpeedPatterns();
+                    
+                    // 分析效率模式
+                    this.analyzeEfficiencyPatterns();
+                    
+                    // 分析消耗模式
+                    this.analyzeConsumptionPatterns();
+                    
+                    console.log('模型训练完成');
+                    return true;
+                } catch (error) {
+                    console.error('模型训练失败:', error);
+                    return false;
+                }
+            }
+
+            // 分析速度模式
+            analyzeSpeedPatterns() {
+                const patterns = {};
+                
+                this.historicalData.forEach(data => {
+                    const conditions = this.normalizeConditions(data.conditions);
+                    const speed = data.records.speed;
+                    
+                    const key = this.getConditionKey(conditions);
+                    if (!patterns[key]) {
+                        patterns[key] = {
+                            speeds: [],
+                            avgSpeed: 0,
+                            stdDev: 0
+                        };
+                    }
+                    
+                    patterns[key].speeds.push(speed);
+                });
+                
+                // 计算每种条件下的平均速度和标准差
+                Object.keys(patterns).forEach(key => {
+                    const stats = this.calculateStats(patterns[key].speeds);
+                    patterns[key].avgSpeed = stats.mean;
+                    patterns[key].stdDev = stats.stdDev;
+                });
+                
+                this.trainingResults.speedPatterns = patterns;
+            }
+
+            // 分析效率模式
+            analyzeEfficiencyPatterns() {
+                const patterns = {};
+                
+                this.historicalData.forEach(data => {
+                    const conditions = this.normalizeConditions(data.conditions);
+                    const efficiency = data.performance.systemEfficiency;
+                    
+                    const key = this.getConditionKey(conditions);
+                    if (!patterns[key]) {
+                        patterns[key] = {
+                            efficiencies: [],
+                            avgEfficiency: 0,
+                            stdDev: 0
+                        };
+                    }
+                    
+                    patterns[key].efficiencies.push(efficiency);
+                });
+                
+                Object.keys(patterns).forEach(key => {
+                    const stats = this.calculateStats(patterns[key].efficiencies);
+                    patterns[key].avgEfficiency = stats.mean;
+                    patterns[key].stdDev = stats.stdDev;
+                });
+                
+                this.trainingResults.efficiencyPatterns = patterns;
+            }
+
+            // 分析消耗模式
+            analyzeConsumptionPatterns() {
+                const patterns = {};
+                
+                this.historicalData.forEach(data => {
+                    const conditions = this.normalizeConditions(data.conditions);
+                    const consumption = data.records.fuelConsumption;
+                    
+                    const key = this.getConditionKey(conditions);
+                    if (!patterns[key]) {
+                        patterns[key] = {
+                            consumptions: [],
+                            avgConsumption: 0,
+                            stdDev: 0
+                        };
+                    }
+                    
+                    patterns[key].consumptions.push(consumption);
+                });
+                
+                Object.keys(patterns).forEach(key => {
+                    const stats = this.calculateStats(patterns[key].consumptions);
+                    patterns[key].avgConsumption = stats.mean;
+                    patterns[key].stdDev = stats.stdDev;
+                });
+                
+                this.trainingResults.consumptionPatterns = patterns;
+            }
+
+            // 标准化条件
+            normalizeConditions(conditions) {
+                return {
+                    windSpeedRange: Math.floor(conditions.windSpeed / 5) * 5,
+                    windDirectionRange: Math.floor(conditions.windDirection / 45) * 45,
+                    waveHeightRange: Math.floor(conditions.waveHeight * 2) / 2,
+                    currentRange: Math.floor(conditions.current * 2) / 2
+                };
+            }
+
+            // 获取条件键值
+            getConditionKey(conditions) {
+                return `${conditions.windSpeedRange}_${conditions.windDirectionRange}_${conditions.waveHeightRange}_${conditions.currentRange}`;
+            }
+
+            // 计算统计数据
+            calculateStats(values) {
+                const mean = values.reduce((a, b) => a + b) / values.length;
+                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+                const stdDev = Math.sqrt(variance);
+                
+                return { mean, stdDev };
+            }
+
+            // 获取优化建议
+            getOptimizationSuggestion(conditions) {
+                const normalizedConditions = this.normalizeConditions(conditions);
+                const key = this.getConditionKey(normalizedConditions);
+                
+                const speedPattern = this.trainingResults.speedPatterns[key];
+                const efficiencyPattern = this.trainingResults.efficiencyPatterns[key];
+                const consumptionPattern = this.trainingResults.consumptionPatterns[key];
+                
+                if (!speedPattern || !efficiencyPattern || !consumptionPattern) {
+                    return null;
+                }
+                
+                return {
+                    recommendedSpeed: speedPattern.avgSpeed,
+                    expectedEfficiency: efficiencyPattern.avgEfficiency,
+                    expectedConsumption: consumptionPattern.avgConsumption,
+                    confidence: this.calculateConfidence(speedPattern.stdDev, efficiencyPattern.stdDev, consumptionPattern.stdDev)
+                };
+            }
+
+            // 计算置信度
+            calculateConfidence(speedStdDev, efficiencyStdDev, consumptionStdDev) {
+                const maxStdDev = Math.max(speedStdDev, efficiencyStdDev, consumptionStdDev);
+                return Math.max(0, 1 - maxStdDev);
+            }
+        }
+
+        // 添加调试辅助函数
+        function checkElementVisibility(selector, description) {
+            const element = document.querySelector(selector);
+            if (element) {
+                const style = window.getComputedStyle(element);
+                console.log(`${description} 可见性:`, {
+                    display: style.display,
+                    opacity: style.opacity,
+                    visibility: style.visibility
+                });
+            } else {
+                console.error(`未找到元素: ${description}`);
+            }
+        }
+
+        // 添加菜单项切换函数
+        function toggleMenuItem(menuId) {
+            try {
+                console.log('切换菜单项:', menuId);
+                
+                const menuItems = document.querySelectorAll('.menu-item');
+                const targetMenuItem = document.getElementById(menuId);
+                
+                if (!targetMenuItem) {
+                    console.error('未找到目标菜单项:', menuId);
+                    return;
+                }
+                
+                // 移除其他菜单项的激活状态
+                menuItems.forEach(item => {
+                    if (item !== targetMenuItem && item.classList.contains('active')) {
+                        item.classList.remove('active');
+                        const subMenu = item.querySelector('ul');
+                        if (subMenu) {
+                            subMenu.style.maxHeight = '0';
+                        }
+                    }
+                });
+                
+                // 切换目标菜单项的激活状态
+                targetMenuItem.classList.toggle('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    if (targetMenuItem.classList.contains('active')) {
+                        // 展开子菜单
+                        const scrollHeight = subMenu.scrollHeight;
+                        subMenu.style.maxHeight = scrollHeight + 'px';
+                        console.log('展开子菜单, 高度:', scrollHeight);
+                    } else {
+                        // 收起子菜单
+                        subMenu.style.maxHeight = '0';
+                        console.log('收起子菜单');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('菜单切换错误:', error);
+            }
+        }
+
+        // 添加计算系统效率的函数
+        function calculateSystemEfficiency(speed) {
+            // 简化的效率计算模型
+            const baseEfficiency = 0.52;
+            const optimalSpeed = 11.5; // 最佳效率速度
+            const speedDiff = Math.abs(speed - optimalSpeed);
+            const efficiencyFactor = 1 - (speedDiff / 20); // 速度偏差影响因子
+            return baseEfficiency * (0.9 + efficiencyFactor * 0.2);
+        }
+
+        // 经济性优化速度计算
+        function calculateEconomicOptimalSpeed(conditions) {
+            const baseSpeed = 12.5;
+            const fuelSavingFactor = 0.85; // 期望节省15%燃料
+            
+            // 考虑风况影响
+            const windEffect = conditions.windSpeed * 0.02;
+            // 考虑浪高影响
+            const waveEffect = conditions.waveHeight * 0.05;
+            // 考虑水流影响
+            const currentEffect = conditions.current * 0.03;
+            
+            // 基础经济速度
+            let economicSpeed = baseSpeed * fuelSavingFactor;
+            
+            // 调整速度考虑环境因素
+            economicSpeed -= (windEffect + waveEffect);
+            economicSpeed += currentEffect; // 顺流时增加速度
+            
+            return economicSpeed;
+        }
+
+        // 效率优化速度计算
+        function calculateEfficiencyOptimalSpeed(conditions) {
+            const optimalEfficiencySpeed = 11.5;
+            const efficiencyFactor = 1.02; // 期望提升2%效率
+            
+            // 考虑温度影响
+            const tempEffect = (conditions.temperature - 15) * 0.001;
+            // 考虑压力影响
+            const pressureEffect = (conditions.pressure - 101.325) * 0.002;
+            
+            // 计算最佳效率速度
+            let efficiencySpeed = optimalEfficiencySpeed * efficiencyFactor;
+            
+            // 环境因素调整
+            efficiencySpeed *= (1 + tempEffect + pressureEffect);
+            
+            return efficiencySpeed;
+        }
+
+        // 时间优化速度计算
+        function calculateTimeOptimalSpeed(conditions) {
+            const baseSpeed = 12.5;
+            const timeSavingFactor = 1.12; // 期望节省12%时间
+            
+            // 考虑航程影响
+            const distanceEffect = (conditions.distance - 580) * 0.0001;
+            // 考虑气象条件综合影响
+            const weatherEffect = calculateWeatherEffect(conditions);
+            
+            // 计算时间优化速度
+            let timeOptimalSpeed = baseSpeed * timeSavingFactor;
+            
+            // 调整因素
+            timeOptimalSpeed *= (1 + distanceEffect);
+            timeOptimalSpeed *= (1 - weatherEffect);
+            
+            return timeOptimalSpeed;
+        }
+
+        // 综合优化速度计算
+        function calculateComprehensiveOptimalSpeed(conditions) {
+            // 获取各优化目标下的速度
+            const economicSpeed = calculateEconomicOptimalSpeed(conditions);
+            const efficiencySpeed = calculateEfficiencyOptimalSpeed(conditions);
+            const timeSpeed = calculateTimeOptimalSpeed(conditions);
+            
+            // 根据权重计算综合速度
+            const weights = {
+                economic: 0.4,
+                efficiency: 0.3,
+                time: 0.3
+            };
+            
+            return (
+                economicSpeed * weights.economic +
+                efficiencySpeed * weights.efficiency +
+                timeSpeed * weights.time
+            );
+        }
+
+        // 计算气象综合影响
+        function calculateWeatherEffect(conditions) {
+            const windEffect = conditions.windSpeed * 0.02;
+            const waveEffect = conditions.waveHeight * 0.05;
+            const currentEffect = conditions.current * 0.03;
+            
+            return (windEffect + waveEffect - currentEffect);
+        }
+
+        // 修改燃料消耗计算函数
+        function calculateFuelConsumption(speed, optimizationGoal = 'comprehensive') {
+            const baseConsumption = 280; // 基准消耗（kg/day）
+            const speedFactor = Math.pow(speed / 12.5, 3); // 速度的三次方关系
+            
+            // 根据优化目标调整燃料消耗
+            let consumptionFactor = 1.0;
+            switch(optimizationGoal) {
+                case 'economy':
+                    consumptionFactor = 0.92; // 经济模式下额外节省8%
+                    break;
+                case 'efficiency':
+                    consumptionFactor = 0.95; // 效率模式下额外节省5%
+                    break;
+                case 'time':
+                    consumptionFactor = 1.05; // 时间模式下增加5%消耗
+                    break;
+            }
+            
+            return baseConsumption * speedFactor * consumptionFactor;
+        }
+
+        // 修改系统效率计算函数
+        function calculateSystemEfficiency(speed, optimizationGoal = 'comprehensive') {
+            const baseEfficiency = 0.52;
+            const optimalSpeed = 11.5;
+            const speedDiff = Math.abs(speed - optimalSpeed);
+            
+            // 基础效率因子
+            let efficiencyFactor = 1 - (speedDiff / 20);
+            
+            // 根据优化目标调整效率
+            switch(optimizationGoal) {
+                case 'economy':
+                    efficiencyFactor *= 1.02; // 经济模式效率提升2%
+                    break;
+                case 'efficiency':
+                    efficiencyFactor *= 1.05; // 效率模式效率提升5%
+                    break;
+                case 'time':
+                    efficiencyFactor *= 0.98; // 时间模式效率降低2%
+                    break;
+            }
+            
+            return baseEfficiency * (0.9 + efficiencyFactor * 0.2);
+        }
+
+        // 港口之间的距离数据（海里）
+        const portDistances = {
+            'shanghai-ningbo': 120,
+            'shanghai-qingdao': 450,
+            'shanghai-tianjin': 680,
+            'shanghai-dalian': 780,
+            'ningbo-qingdao': 520,
+            'ningbo-tianjin': 750,
+            'ningbo-dalian': 850,
+            'qingdao-tianjin': 280,
+            'qingdao-dalian': 380,
+            'tianjin-dalian': 220
+        };
+
+        // 更新距离显示
+        function updateDistance() {
+            const departurePort = document.getElementById('departurePort').value;
+            const destinationPort = document.getElementById('destination').value;
+            
+            if (departurePort && destinationPort) {
+                const distance = getPortDistance(departurePort, destinationPort);
+                document.getElementById('distanceValue').textContent = distance;
+                return distance;
+            } else {
+                document.getElementById('distanceValue').textContent = '--';
+                return null;
+            }
+        }
+
+        // 获取两个港口之间的距离
+        function getPortDistance(port1, port2) {
+            if (port1 === port2) return 0;
+            
+            const key1 = `${port1}-${port2}`;
+            const key2 = `${port2}-${port1}`;
+            
+            return portDistances[key1] || portDistances[key2] || 0;
+        }
+
+        // 添加更新优化结果对比的函数
+        function updateComparisonContent(optimalSpeed, optimizationGoal) {
+            const comparisonGrid = document.querySelector('.comparison-grid');
+            if (!comparisonGrid) return;
+            
+            const currentSpeed = 12.5;
+            const currentConsumption = calculateFuelConsumption(currentSpeed);
+            const optimalConsumption = calculateFuelConsumption(optimalSpeed, optimizationGoal);
+            const currentEfficiency = calculateSystemEfficiency(currentSpeed);
+            const optimalEfficiency = calculateSystemEfficiency(optimalSpeed, optimizationGoal);
+            
+            comparisonGrid.innerHTML = `
+                <!-- 航速对比 -->
+                <div class="comparison-item">
+                    <h4>航速对比</h4>
+                    <div class="comparison-data">
+                        <div class="before">
+                            <span class="label">优化前</span>
+                            <span class="value">${currentSpeed.toFixed(1)} kn</span>
+                        </div>
+                        <div class="after">
+                            <span class="label">优化后</span>
+                            <span class="value">${optimalSpeed.toFixed(1)} kn</span>
+                        </div>
+                        <div class="change ${optimalSpeed > currentSpeed ? 'increase' : 'decrease'}">
+                            <i class="fas fa-${optimalSpeed > currentSpeed ? 'arrow-up' : 'arrow-down'}"></i>
+                            ${Math.abs(((optimalSpeed - currentSpeed) / currentSpeed * 100)).toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 燃料消耗对比 -->
+                <div class="comparison-item">
+                    <h4>燃料消耗对比</h4>
+                    <div class="comparison-data">
+                        <div class="before">
+                            <span class="label">优化前</span>
+                            <span class="value">${currentConsumption.toFixed(0)} kg/day</span>
+                        </div>
+                        <div class="after">
+                            <span class="label">优化后</span>
+                            <span class="value">${optimalConsumption.toFixed(0)} kg/day</span>
+                        </div>
+                        <div class="change ${optimalConsumption < currentConsumption ? 'decrease' : 'increase'}">
+                            <i class="fas fa-${optimalConsumption < currentConsumption ? 'arrow-down' : 'arrow-up'}"></i>
+                            ${Math.abs(((optimalConsumption - currentConsumption) / currentConsumption * 100)).toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统效率对比 -->
+                <div class="comparison-item">
+                    <h4>系统效率对比</h4>
+                    <div class="comparison-data">
+                        <div class="before">
+                            <span class="label">优化前</span>
+                            <span class="value">${(currentEfficiency * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="after">
+                            <span class="label">优化后</span>
+                            <span class="value">${(optimalEfficiency * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="change ${optimalEfficiency > currentEfficiency ? 'increase' : 'decrease'}">
+                            <i class="fas fa-${optimalEfficiency > currentEfficiency ? 'arrow-up' : 'arrow-down'}"></i>
+                            ${Math.abs(((optimalEfficiency - currentEfficiency) / currentEfficiency * 100)).toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

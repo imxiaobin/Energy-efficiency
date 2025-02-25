@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能效提升预测</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 基础页面布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 侧边栏菜单图标 */
+        #menuItem0 h2::before { content: "\f54b"; color: #3498db; }
+        #menuItem1 h2::before { content: "\f080"; color: #2ecc71; }
+        #menuItem2 h2::before { content: "\f0e4"; color: #e67e22; }
+        #menuItem3 h2::before { content: "\f5eb"; color: #e74c3c; }
+        #menuItemReportGen h2::before { content: "\f15c"; color: #9b59b6; }
+
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar .menu-item h2:hover,
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+            overflow-y: auto;
+            height: auto;
+            min-height: calc(100vh - 40px);
+        }
+
+        /* 修改优化按钮组样式 */
+        .optimization-selection {
+            padding: 10px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .optimization-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .optimization-card {
+            background: linear-gradient(145deg, #ffffff, #f0f7ff);
+            border-radius: 15px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .optimization-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .optimization-card.active {
+            background: linear-gradient(145deg, #e8f4ff, #d4e9ff);
+            border: 1px solid #3498db;
+        }
+        
+        .card-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .card-icon i {
+            color: white;
+            font-size: 20px;
+        }
+        
+        .card-content {
+            flex: 1;
+        }
+        
+        .card-content h3 {
+            color: #2c3e50;
+            margin: 0 0 3px 0;
+            font-size: 16px;
+        }
+        
+        .card-content p {
+            color: #7f8c8d;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+
+        @media (max-width: 768px) {
+            .optimization-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 在现有样式后添加页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* 在样式部分添加菜单折叠相关的CSS */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 在现有样式中添加面包屑导航样式 */
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .breadcrumb i {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .breadcrumb .current-page {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .breadcrumb span {
+            position: relative;
+            padding: 0 5px;
+        }
+
+        .breadcrumb i.fa-angle-right {
+            margin: 0 5px;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 添加页眉 -->
+        <header>
+            <div class="header-content">
+                <!-- 添加面包屑导航 -->
+                <div class="breadcrumb">
+                    <i class="fas fa-home"></i>
+                    <span>能效分析</span>
+                    <i class="fas fa-angle-right"></i>
+                    <span class="current-page">能效提升预测</span>
+                </div>
+                
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 优化按钮组 -->
+        <div class="optimization-selection">
+            <div class="optimization-cards">
+                <div class="optimization-card" data-type="speed" onclick="window.location.href='船舶航速优化.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-ship"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶航速优化</h3>
+                        <p>优化船舶航速，提高航行效率</p>
+                    </div>
+                </div>
+                
+                <div class="optimization-card" data-type="route" onclick="window.location.href='船舶航线优化.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶航线优化</h3>
+                        <p>优化船舶航线，提高航行效率</p>
+                    </div>
+                </div>
+                
+                <div class="optimization-card" data-type="trim" onclick="window.location.href='船舶纵倾优化.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶纵倾优化</h3>
+                        <p>优化船舶纵倾，提高航行效率</p>
+                    </div>
+                </div>
+                
+                <div class="optimization-card" data-type="energy" onclick="window.location.href='能量管理优化.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>能量管理优化</h3>
+                        <p>优化能量管理，提高航行效率</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+    <script>
+        // 侧边栏菜单控制
+        function toggleMenuItem(menuId) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const targetMenuItem = document.getElementById(menuId).closest('.menu-item');
+            
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const subMenu = item.querySelector('ul');
+                    if (subMenu) {
+                        subMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            targetMenuItem.classList.add('active');
+            const subMenu = targetMenuItem.querySelector('ul');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+
+        // 初始化事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化侧边栏菜单项的点击事件
+            document.querySelectorAll('.menu-item').forEach(item => {
+                const h2 = item.querySelector('h2');
+                if (h2) {
+                    h2.addEventListener('click', () => {
+                        const menuId = item.id;
+                        toggleMenuItem(menuId);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

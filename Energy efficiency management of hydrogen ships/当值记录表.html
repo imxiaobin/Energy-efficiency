@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能耗记录表</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 从船舶信息管理.html复制基础布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 从船舶信息管理.html复制侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 从船舶信息管理.html复制侧边栏菜单项样式 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 复制所有菜单图标样式 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        #menuItem0 h2::before {
+            content: "\f54b";
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";
+            color: #9b59b6;
+        }
+
+        /* 复制子菜单样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+            opacity: 0.8;
+            background: transparent;
+        }
+
+        .sidebar .menu-item li:hover {
+            opacity: 1;
+            transform: translateX(5px);
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(44, 62, 80, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 复制页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 复制导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 复制主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+        }
+
+        /* 这里可以添加能耗记录表特有的样式... */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            opacity: 0;
+            transform: translateY(-5px);
+            visibility: hidden;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 1000px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        /* 子菜单项的渐入效果 */
+        .sidebar .menu-item ul li {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition-delay: calc(0.1s * var(--item-index, 0));
+        }
+
+        .sidebar .menu-item.active ul li {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* 添加菜单标题悬停效果 */
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 激活状态的菜单标题样式 */
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 修改子菜单项样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+            opacity: 0.8;
+            background: transparent;
+        }
+
+        .sidebar .menu-item li:hover {
+            opacity: 1;
+            transform: translateX(5px);
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 修改子菜单项箭头图标样式 */
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(44, 62, 80, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 子菜单项悬停时箭头动画 */
+        .sidebar .menu-item li:hover::before {
+            transform: translateX(3px);
+            color: #3498db;
+        }
+
+        /* 添加菜单展开/收起时的平滑过渡 */
+        .sidebar .menu-item {
+            margin-bottom: 5px;
+            transition: margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .duty-record-container {
+            padding: 20px;
+        }
+
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-selector input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .add-record-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+
+        .add-record-btn:hover {
+            background: #2980b9;
+        }
+
+        .duty-table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .duty-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .duty-table th,
+        .duty-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .duty-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .duty-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-on-duty {
+            background: #e1f7e1;
+            color: #2ecc71;
+        }
+
+        .status-absent {
+            background: #ffe1e1;
+            color: #e74c3c;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .edit-btn {
+            background: #f1c40f;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .duty-time-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .time-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .time-checkbox input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .time-checkbox label {
+            margin: 0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <!-- 复制侧边栏结构 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 复制页眉结构 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 添加值班记录表单和列表 -->
+        <div class="duty-record-container">
+            <div class="control-panel">
+                <div class="date-selector">
+                    <label for="recordDate">选择日期：</label>
+                    <input type="date" id="recordDate">
+                </div>
+                <button class="add-record-btn">
+                    <i class="fas fa-plus"></i> 添加记录
+                </button>
+            </div>
+
+            <div class="duty-table-container">
+                <table class="duty-table">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>职位</th>
+                            <th>值班时间</th>
+                            <th>值班状态</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 这里将通过 JavaScript 动态添加数据 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制JavaScript代码 -->
+    <script>
+        // 将所有 DOM 操作相关的代码都放在一个 DOMContentLoaded 事件监听器中
+        document.addEventListener('DOMContentLoaded', function() {
+            // 菜单相关代码
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            menuItems.forEach(item => {
+                const menuItems = item.querySelectorAll('li');
+                menuItems.forEach((menuItem, index) => {
+                    menuItem.style.setProperty('--item-index', index);
+                });
+            });
+
+            menuItems.forEach(item => {
+                const title = item.querySelector('h2');
+                if (title) {
+                    title.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        item.classList.toggle('active');
+                        
+                        menuItems.forEach(otherItem => {
+                            if (otherItem !== item && otherItem.classList.contains('active')) {
+                                otherItem.classList.remove('active');
+                            }
+                        });
+                    });
+                }
+            });
+
+            // 模拟数据
+            const dutyRecords = [
+                {
+                    name: '张三',
+                    position: '轮机长',
+                    time: '08:00-16:00',
+                    status: '在岗',
+                    notes: '正常值班'
+                },
+                {
+                    name: '李四',
+                    position: '大副',
+                    time: '16:00-24:00',
+                    status: '缺勤',
+                    notes: '病假'
+                }
+            ];
+
+            // 渲染值班记录
+            function renderDutyRecords() {
+                const tbody = document.querySelector('.duty-table tbody');
+                tbody.innerHTML = dutyRecords.map(record => `
+                    <tr>
+                        <td>${record.name}</td>
+                        <td>${record.position}</td>
+                        <td>${record.time}</td>
+                        <td>
+                            <span class="status-badge ${record.status === '在岗' ? 'status-on-duty' : 'status-absent'}">
+                                ${record.status}
+                            </span>
+                        </td>
+                        <td>${record.notes}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn edit-btn">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // 初始化页面数据
+            renderDutyRecords();
+            
+            // 设置日期选择器的默认值为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('recordDate').value = today;
+
+            // 模态框相关代码
+            const modal = document.getElementById('addRecordModal');
+            const addRecordBtn = document.querySelector('.add-record-btn');
+            const closeBtn = document.querySelector('.close');
+            const cancelBtn = document.querySelector('.cancel-btn');
+            const form = document.getElementById('dutyRecordForm');
+
+            // 打开模态框
+            addRecordBtn.addEventListener('click', function() {
+                modal.style.display = "block";
+            });
+
+            // 关闭模态框
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = "none";
+            });
+
+            cancelBtn.addEventListener('click', function() {
+                modal.style.display = "none";
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            });
+
+            // 处理表单提交
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取选中的时间段
+                const selectedTimes = Array.from(document.querySelectorAll('input[name="dutyTime"]:checked'))
+                    .map(checkbox => checkbox.value)
+                    .join(', ');
+                
+                const newRecord = {
+                    name: document.getElementById('name').value,
+                    position: document.getElementById('position').value,
+                    time: selectedTimes || '未选择时间', // 如果没有选择时间，显示"未选择时间"
+                    status: document.getElementById('status').value,
+                    notes: document.getElementById('notes').value
+                };
+
+                dutyRecords.push(newRecord);
+                renderDutyRecords();
+                modal.style.display = "none";
+                form.reset();
+            });
+        });
+    </script>
+
+    <!-- 在 body 标签结束前添加模态框 -->
+    <div id="addRecordModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>添加值班记录</h2>
+            <form id="dutyRecordForm">
+                <div class="form-group">
+                    <label for="name">姓名：</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="position">职位：</label>
+                    <select id="position" required>
+                        <option value="">请选择职位</option>
+                        <option value="轮机长">轮机长</option>
+                        <option value="大副">大副</option>
+                        <option value="二副">二副</option>
+                        <option value="三副">三副</option>
+                        <option value="实习三副">实习三副</option>
+                        <option value="水手长">水手长</option>
+                        <option value="大水手">大水手</option>
+                        <option value="水手">水手</option>
+                        <option value="实习水手">实习水手</option>
+                        <option value="轮机长">轮机长</option>
+                        <option value="大管轮">大管轮</option>
+                        <option value="二管轮">二管轮</option>
+                        <option value="三管轮">三管轮</option>
+                        <option value="实习管轮">实习管轮</option>
+                        <option value="机工长">机工长</option>
+                        <option value="机工">机工</option>
+                        <option value="电机员">电机员</option>
+                        <option value="实习机工">实习机工</option>
+                        <option value="船厨">船厨</option>
+                        <option value="服务员">服务员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dutyTime">值班时间：</label>
+                    <div class="duty-time-checkboxes">
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time1" name="dutyTime" value="00:00-04:00">
+                            <label for="time1">00:00-04:00</label>
+                        </div>
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time2" name="dutyTime" value="04:00-08:00">
+                            <label for="time2">04:00-08:00</label>
+                        </div>
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time3" name="dutyTime" value="08:00-12:00">
+                            <label for="time3">08:00-12:00</label>
+                        </div>
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time4" name="dutyTime" value="12:00-16:00">
+                            <label for="time4">12:00-16:00</label>
+                        </div>
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time5" name="dutyTime" value="16:00-20:00">
+                            <label for="time5">16:00-20:00</label>
+                        </div>
+                        <div class="time-checkbox">
+                            <input type="checkbox" id="time6" name="dutyTime" value="20:00-24:00">
+                            <label for="time6">20:00-24:00</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="status">值班状态：</label>
+                    <select id="status" required>
+                        <option value="在岗">在岗</option>
+                        <option value="缺勤">缺勤</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notes">备注：</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">提交</button>
+                    <button type="button" class="cancel-btn">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

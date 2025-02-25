@@ -1,0 +1,2821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能效提升预测</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+            overflow-y: auto;
+            height: auto;
+            min-height: calc(100vh - 40px);
+        }
+
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .search-area {
+            padding: 15px;
+            background: transparent;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .optimization-selection {
+            padding: 5px 15px;     /* 从 10px 20px 减小到 5px 15px */
+            margin-bottom: 5px;    /* 从 10px 减小到 5px */
+        }
+
+        .optimization-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;            /* 从 15px 减小到 10px */
+            padding: 3px;         /* 从 5px 减小到 3px */
+            margin: 5px 0;        /* 从 10px 0 减小到 5px 0 */
+        }
+
+        .optimization-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 15px;        /* 从 20px 减小到 15px */
+            display: flex;
+            align-items: center;
+            gap: 10px;           /* 从 15px 减小到 10px */
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.1),
+                0 1px 2px rgba(255, 255, 255, 0.3) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .optimization-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .optimization-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 1px 2px rgba(255, 255, 255, 0.4) inset;
+        }
+
+        .optimization-card:hover::before {
+            opacity: 1;
+        }
+
+        .optimization-card.active {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            box-shadow: 
+                0 8px 25px rgba(52, 152, 219, 0.2),
+                0 1px 2px rgba(255, 255, 255, 0.4) inset;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 
+                0 4px 15px rgba(52, 152, 219, 0.3),
+                0 1px 2px rgba(255, 255, 255, 0.3) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.2) 0%,
+                transparent 100%
+            );
+        }
+
+        .card-icon i {
+            color: white;
+            font-size: 22px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-content h3 {
+            color: #2c3e50;
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-content p {
+            color: #7f8c8d;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        @media (hover: hover) {
+            .optimization-card:hover .card-icon {
+                transform: scale(1.05);
+            }
+            
+            .optimization-card:hover .card-content h3 {
+                color: #3498db;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .optimization-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .optimization-card {
+                padding: 15px;
+            }
+            
+            .card-icon {
+                width: 42px;
+                height: 42px;
+            }
+            
+            .card-icon i {
+                font-size: 20px;
+            }
+            
+            .card-content h3 {
+                font-size: 16px;
+            }
+            
+            .card-content p {
+                font-size: 13px;
+            }
+        }
+
+        .optimization-content {
+            margin-top: 5px;     /* 添加较小的上边距 */
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease-out;
+            height: auto;
+        }
+
+        .route-optimization-inputs,
+        .trim-optimization-inputs,
+        .energy-optimization-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;           /* 从 30px 减小到 20px */
+            padding: 20px;       /* 从 25px 减小到 20px */
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            height: 96px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+        }
+
+        .optimization-result {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+            position: relative;
+            z-index: 1;
+            height: auto;
+            min-height: fit-content;
+        }
+
+        .result-overview {
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .result-overview h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-overview h3 i {
+            color: #3498db;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .overview-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .item-header i {
+            color: #3498db;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .item-content .unit {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+
+        .trend-indicator {
+            margin-left: auto;
+            font-size: 20px;
+        }
+
+        .trend-indicator i.increase {
+            color: #e74c3c;
+        }
+
+        .trend-indicator i.neutral {
+            color: #3498db;
+        }
+
+        .trend-indicator i.decrease {
+            color: #27ae60;
+        }
+
+        .speed-comparison {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+            padding: 0 10px;
+        }
+
+        .speed-card {
+            flex: 1;
+            min-width: 200px;
+            height: 135px;
+            padding: 20px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .speed-card.current {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+        }
+
+        .speed-card.optimized {
+            background: linear-gradient(145deg, #e6f3ff, #d9edff);
+            box-shadow: 8px 8px 16px #d1e3f0,
+                       -8px -8px 16px #ffffff;
+        }
+
+        .speed-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 12px 12px 20px #d1d1d1,
+                       -12px -12px 20px #ffffff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .card-header i {
+            font-size: 18px;
+        }
+
+        .current .card-header i {
+            color: #e74c3c;
+        }
+
+        .optimized .card-header i {
+            color: #27ae60;
+        }
+
+        .speed-value {
+            text-align: center;
+            padding: 15px 0;
+        }
+
+        .speed-value .value {
+            font-size: 42px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .speed-value .unit {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        .speed-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .current .speed-status {
+            color: #e74c3c;
+        }
+
+        .optimized .speed-status {
+            color: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .speed-comparison {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .speed-card {
+                width: 100%;
+            }
+        }
+
+        .speed-trend-chart {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+            margin-top: 20px;
+        }
+
+        .chart-header {
+            margin-bottom: 15px;
+        }
+
+        .chart-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-header h4 i {
+            color: #3498db;
+        }
+
+        #speedTrendChart {
+            height: 180px; /* 控制图表高度 */
+            width: 100%;
+        }
+
+        .speed-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .speed-trend-chart {
+            background: linear-gradient(145deg, #ffffff, #f8f9fb);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 8px 8px 16px #e6e6e6,
+                       -8px -8px 16px #ffffff;
+        }
+
+        #speedTrendChart {
+            height: 180px;
+            width: 100%;
+        }
+
+        .speed-optimization-inputs {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            padding: 25px;
+            position: relative;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                       0 4px 12px rgba(52, 152, 219, 0.08);
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+
+        .speed-optimization-inputs .input-group {
+            flex: 1 1 calc(33.33% - 20px);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            min-width: 200px;
+            max-width: calc(33.33% - 20px);
+        }
+
+        .speed-optimization-inputs select,
+        .speed-optimization-inputs input {
+            width: 100%;
+            height: 40px;
+            padding: 8px 15px;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+            background: white;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .speed-optimization-inputs select:focus,
+        .speed-optimization-inputs input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .speed-optimization-inputs h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            gap: 8px;
+        }
+
+        .speed-optimization-inputs h4 i {
+            color: #3498db;
+            font-size: 18px;
+        }
+
+        .start-optimization {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .speed-optimization-inputs {
+                flex-direction: column;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .speed-optimization-inputs .input-group {
+                width: 100%;
+                max-width: 100%;
+                flex: 1 1 auto;
+            }
+
+            .start-optimization {
+                position: static;
+                margin-top: 20px;
+                display: flex;
+                justify-content: flex-end;
+            }
+        }
+
+        .optimization-scheme {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+        }
+
+        .optimization-scheme h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .optimization-scheme h3 i {
+            color: #3498db;
+        }
+
+        .scheme-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+            transition: all 0.3s ease-out;
+        }
+
+        .scheme-cards.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scheme-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-out;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .scheme-cards.visible .scheme-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scheme-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .scheme-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .scheme-card .card-header i {
+            color: #3498db;
+            font-size: 20px;
+        }
+
+        .scheme-card .card-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .scheme-card .card-content {
+            color: #34495e;
+        }
+
+        .scheme-card .card-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .scheme-card .card-content li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .scheme-card:nth-child(1) .card-header i {
+            color: #3498db;
+        }
+
+        .scheme-card:nth-child(2) .card-header i {
+            color: #2ecc71;
+        }
+
+        .scheme-card:nth-child(3) .card-header i {
+            color: #f1c40f;
+        }
+
+        .scheme-card:nth-child(4) .card-header i {
+            color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .scheme-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .basis-section {
+            margin-bottom: 15px;
+        }
+
+        .basis-section h5 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .basis-section h5 i {
+            color: #3498db;
+            width: 16px;
+        }
+
+        .basis-section ul {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 15px; /* 增加列间距 */
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+        }
+
+        .basis-section ul li {
+            white-space: nowrap; /* 防止文本换行 */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 超出显示省略号 */
+        }
+
+        .basis-section:nth-child(1) h5 i { color: #3498db; }  /* 气象 */
+        .basis-section:nth-child(2) h5 i { color: #2ecc71; }  /* 水象 */
+        .basis-section:nth-child(3) h5 i { color: #f1c40f; }  /* 燃料 */
+        .basis-section:nth-child(4) h5 i { color: #e74c3c; }  /* 动力 */
+        .basis-section:nth-child(5) h5 i { color: #9b59b6; }  /* 航行 */
+        .basis-section:nth-child(6) h5 i { color: #34495e; }  /* 姿态 */
+
+        .scheme-card .card-content {
+            max-height: 400px; /* 设置最大高度 */
+            overflow-y: auto; /* 添加垂直滚动 */
+        }
+
+        .scheme-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: none;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #e74c3c;
+            transform: rotate(90deg);
+        }
+
+        .scheme-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .scheme-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .advice-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .advice-section h5 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .advice-section h5 i {
+            width: 16px;
+        }
+
+        .advice-section:nth-child(1) h5 i { color: #3498db; }  /* 航速 */
+        .advice-section:nth-child(2) h5 i { color: #f1c40f; }  /* 燃料 */
+        .advice-section:nth-child(3) h5 i { color: #e74c3c; }  /* 电堆 */
+        .advice-section:nth-child(4) h5 i { color: #2ecc71; }  /* 动力 */
+
+        .advice-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .advice-section ul li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+            font-size: 13px;
+        }
+
+        .effect-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .effect-section h5 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .effect-section h5 i {
+            width: 16px;
+        }
+
+        .effect-section:nth-child(1) h5 i { color: #f1c40f; }  /* 燃料 */
+        .effect-section:nth-child(2) h5 i { color: #e74c3c; }  /* 动力 */
+        .effect-section:nth-child(3) h5 i { color: #3498db; }  /* 船舶 */
+        .effect-section:nth-child(4) h5 i { color: #27ae60; }  /* 经济 */
+
+        .effect-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .effect-section ul li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+            font-size: 13px;
+        }
+
+        .scheme-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-scheme-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-scheme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .toggle-scheme-btn i {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle-scheme-btn.expanded i {
+            transform: rotate(180deg);
+        }
+
+        /* 优化效果对比模块样式 */
+        .optimization-comparison {
+            margin-top: 30px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                        0 4px 12px rgba(52, 152, 219, 0.08);
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .comparison-header h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-header h3 i {
+            color: #3498db;
+        }
+
+        /* 优化展开详情按钮样式 */
+        .toggle-comparison-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 20px;
+            background: transparent;
+            color: #3498db;
+            border: 2px solid #3498db;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .toggle-comparison-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .toggle-comparison-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .toggle-comparison-btn:hover::before {
+            opacity: 1;
+        }
+
+        .toggle-comparison-btn i,
+        .toggle-comparison-btn span {
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-comparison-btn.expanded {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        /* 优化对比卡片网格布局 */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);  /* 保持2列布局 */
+            gap: 25px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        /* 修改对比卡片的样式 */
+        .comparison-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-out;
+            height: 400px;  /* 固定高度 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 卡片头部样式 */
+        .comparison-card .card-header {
+            flex-shrink: 0;  /* 防止头部压缩 */
+            margin-bottom: 15px;
+        }
+
+        /* 表格容器样式 */
+        .comparison-table {
+            flex: 1;        /* 占用剩余空间 */
+            overflow-y: auto;  /* 启用垂直滚动 */
+            padding-right: 5px;  /* 为滚动条预留空间 */
+        }
+
+        /* 表样式优化 */
+        .comparison-table table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        /* 固定表头 */
+        .comparison-table thead {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 优化表格行间距 */
+        .comparison-table tbody tr {
+            height: 45px;  /* 调整行高 */
+        }
+
+        /* 添加分隔线效果 */
+        .comparison-table tbody tr:not(:last-child) {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* 添加悬停效果 */
+        .comparison-table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .comparison-table th {
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .comparison-table td {
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* 设置表格行间距 */
+        .comparison-table tbody tr {
+            height: 50px;  /* 增加行高 */
+        }
+
+        /* 设置滚动条样式 */
+        .comparison-table::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .comparison-table::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .comparison-table::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .comparison-table::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* 添加响应式布局 */
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;  /* 小屏幕时改为单列 */
+            }
+            
+            .comparison-card {
+                height: 350px;  /* 小屏幕时适当减小高度 */
+            }
+        }
+
+        /* 添加卡片动画效果 */
+        .comparison-grid {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-grid.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .comparison-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-grid.visible .comparison-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 为每个卡片添加不同的延迟动画 */
+        .comparison-grid.visible .comparison-card:nth-child(1) { transition-delay: 0.1s; }
+        .comparison-grid.visible .comparison-card:nth-child(2) { transition-delay: 0.2s; }
+        .comparison-grid.visible .comparison-card:nth-child(3) { transition-delay: 0.3s; }
+        .comparison-grid.visible .comparison-card:nth-child(4) { transition-delay: 0.4s; }
+
+        .start-optimization {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        .start-opt-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 25px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            margin-top: 28px;
+            white-space: nowrap;  /* 防止文字换行 */
+            letter-spacing: 1px;  /* 增加字间距 */
+        }
+
+        .start-opt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .start-opt-btn:active {
+            transform: translateY(1px);
+        }
+
+        .start-opt-btn i {
+            font-size: 15px;
+            margin-right: 5px;  /* 调整图标和文字的间距 */
+        }
+
+        /* 隐藏优化结果相关的div */
+        .optimization-result,
+        .optimization-scheme,
+        .optimization-comparison {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease-out;
+        }
+
+        .main-content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;           /* 从 15px 减小到 10px */
+            padding: 15px;       /* 从 20px 减小到 15px */
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .optimization-contents {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;           /* 从 15px 减小到 10px */
+        }
+
+        .optimization-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease-out;
+            width: 100%;
+            height: auto;
+        }
+
+        /* 添加航线优化输入样式 */
+        .route-optimization-inputs {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            padding: 25px;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05),
+                       0 4px 12px rgba(52, 152, 219, 0.08);
+            margin-bottom: 20px;
+            position: relative;
+            height: 100px;
+            align-items: center;
+        }
+
+        .route-optimization-inputs .input-group {
+            flex: 1;
+            min-width: 180px;
+            margin-bottom: 0;
+            height: 73px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 0 5px;
+        }
+
+        .route-optimization-inputs .input-group h4 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            height: 20px;
+        }
+
+        .route-optimization-inputs select,
+        .route-optimization-inputs input[type="datetime-local"] {
+            width: 100%;
+            height: 40px;
+            padding: 8px 12px;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+            background: white;
+            transition: all 0.3s ease;
+            outline: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .route-optimization-inputs select:focus,
+        .route-optimization-inputs input[type="datetime-local"]:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        /* 调整按钮组的样式 */
+        .route-optimization-inputs .button-group {
+            position: relative;
+            height: 68px;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 0;
+            margin-left: 15px;
+            flex: 0 0 auto;
+            min-width: 120px;
+        }
+
+        .route-optimization-inputs .start-opt-btn {
+            height: 40px;
+            width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            margin-top: 28px;
+            white-space: nowrap;  /* 防止文字换行 */
+            letter-spacing: 1px;  /* 增加字间距 */
+        }
+
+        .route-optimization-inputs .start-opt-btn i {
+            font-size: 15px;
+            margin-right: 5px;  /* 调整图标和文字的间距 */
+        }
+
+        /* 调整输入组的样式以保持一致性 */
+        .route-optimization-inputs .input-group {
+            flex: 1;
+            min-width: 150px;
+            margin-bottom: 0;
+            height: 73px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 响应式布局调整 */
+        @media (max-width: 1200px) {
+            .route-optimization-inputs {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 20px;
+                gap: 15px;
+            }
+
+            .route-optimization-inputs .input-group {
+                flex: 1 1 calc(50% - 10px);
+                margin-bottom: 15px;
+                min-width: 250px;
+            }
+
+            .route-optimization-inputs .button-group {
+                width: 100%;
+                margin-left: 0;
+                height: auto;
+                margin-top: 10px;
+            }
+
+            .route-optimization-inputs .start-opt-btn {
+                width: 100%;
+                margin-top: 0;
+                height: 45px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .route-optimization-inputs {
+                padding-bottom: 25px;
+            }
+            
+            .route-optimization-inputs .input-group {
+                flex: 1 1 100%;
+                margin-bottom: 15px;
+            }
+        }
+
+        /* 添加到现有的样式中 */
+        .basis-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-out;
+            margin-bottom: 15px;
+        }
+
+        .basis-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scheme-cards {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease-out;
+        }
+
+        .scheme-cards.visible {
+            display: grid;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scheme-card {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-out;
+        }
+
+        .scheme-cards.visible .scheme-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 为每个卡片添加延迟动画 */
+        .scheme-cards.visible .scheme-card:nth-child(1) { transition-delay: 0.1s; }
+        .scheme-cards.visible .scheme-card:nth-child(2) { transition-delay: 0.2s; }
+        .scheme-cards.visible .scheme-card:nth-child(3) { transition-delay: 0.3s; }
+        .scheme-cards.visible .scheme-card:nth-child(4) { transition-delay: 0.4s; }
+
+        @media (max-width: 768px) {
+            .scheme-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .basis-section {
+            margin-bottom: 15px;
+            opacity: 1;  /* 添加初始透明度 */
+            transform: translateY(0);  /* 添加初始位置 */
+            transition: all 0.3s ease-out;
+        }
+
+        .basis-section h5 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scheme-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+            transition: all 0.3s ease-out;
+        }
+
+        .scheme-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-out;
+        }
+
+        /* 添加新的样式规则 */
+        .scheme-cards:not(.visible) {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .scheme-cards:not(.visible) .scheme-card {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .ship-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(230, 243, 255, 0.8));
+            border-radius: 12px;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .ship-info-bar .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .ship-info-bar .info-item i {
+            color: #3498db;
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .ship-info-bar .info-item .label {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .ship-info-bar .info-item .value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        /* 添加响应式布局 */
+        @media (max-width: 1200px) {
+            .ship-info-bar {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .ship-info-bar .info-item {
+                flex: 1 1 calc(33.33% - 10px);
+                min-width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .ship-info-bar .info-item {
+                flex: 1 1 calc(50% - 10px);
+            }
+        }
+
+        /* 添加下拉箭头图标到select元素 */
+        .route-optimization-inputs select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            padding-right: 30px;
+        }
+
+        /* 统一日期时间输入框的样式 */
+        .route-optimization-inputs input[type="datetime-local"] {
+            padding-right: 30px;
+            padding-left: 10px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 修复 Safari 浏览器中的日期时间输入框样式 */
+        @supports (-webkit-appearance: none) {
+            .route-optimization-inputs input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+                opacity: 0;
+                width: 30px;
+                height: 30px;
+                position: absolute;
+                right: 5px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: pointer;
+                z-index: 2;
+            }
+        }
+
+        /* 修复 Firefox 浏览器中的日期时间输入框样式 */
+        .route-optimization-inputs input[type="datetime-local"]::-moz-calendar-picker-indicator {
+            opacity: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        /* 确保所有输入组的高度一致 */
+        .route-optimization-inputs .input-group {
+            flex: 1;
+            min-width: 150px;
+            margin-bottom: 0;
+            height: 73px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            gap: 8px;
+            overflow: visible;
+        }
+
+        /* 调整按钮组的位置和大小 */
+        .route-optimization-inputs .button-group {
+            height: 75px;  /* 与其他输入组保持一��� */
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 8px;  /* 与输入框底部对齐 */
+        }
+
+        /* 调整整个容器的高度 */
+        .route-optimization-inputs {
+            height: auto;
+            min-height: 120px;
+            padding: 25px;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            position: relative;
+        }
+
+        .item-content .unit {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: normal;
+            margin-right: 10px;
+        }
+
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 14px;
+            font-weight: normal;
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .trend-indicator.increase {
+            color: #e74c3c;
+        }
+
+        .trend-indicator.decrease {
+            color: #27ae60;
+        }
+
+        .trend-indicator.neutral {
+            color: #3498db;
+        }
+
+        .trend-indicator i {
+            font-size: 16px;
+        }
+
+        .trend-indicator span {
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .item-content {
+                font-size: 20px;
+            }
+
+            .trend-indicator {
+                font-size: 12px;
+                padding: 3px 6px;
+            }
+
+            .trend-indicator i {
+                font-size: 14px;
+            }
+
+            .trend-indicator span {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 从船舶信息管理.html复制的侧边栏HTML结构 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 从船舶信息管理.html复制的页眉HTML结构 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 修改内容区域的结构 -->
+        <div class="main-content-area">
+            <!-- 优化按钮组 -->
+            <div class="optimization-selection">
+                <div class="optimization-cards">
+                    <div class="optimization-card" onclick="location.href='船舶航速优化.html'">
+                        <div class="card-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶航速优化</h3>
+                            <p>基于航行数据优化船舶航速，提升能效表现</p>
+                        </div>
+                    </div>
+
+                    <!-- 移除多余的onclick事件，因为这是当前页面 -->
+                    <div class="optimization-card active">
+                        <div class="card-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶航线优化</h3>
+                            <p>智能规划最优航线，降低燃料消耗</p>
+                        </div>
+                    </div>
+
+                    <div class="optimization-card" onclick="location.href='船舶纵倾优化.html'">
+                        <div class="card-icon">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>船舶纵倾优化</h3>
+                            <p>优化船舶纵倾状态，提升航行效率</p>
+                        </div>
+                    </div>
+
+                    <div class="optimization-card" onclick="location.href='能量管理优化.html'">
+                        <div class="card-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>能量管理优化</h3>
+                            <p>优化能量分配策略，实现节能减排</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 将优化内容区域移到这里 -->
+            <div class="optimization-contents">
+                <div class="optimization-content" id="speedContent" style="display: none;">
+                    <!-- 航速优化内容已移除 -->
+                </div>
+
+                <div class="optimization-content" id="routeContent" style="display: none;">
+                    <!-- 航线优化输入部分 -->
+                    <div class="route-optimization-inputs">
+                        <div class="input-group">
+                            <h4><i class="fas fa-sliders-h"></i> 优化目标</h4>
+                            <select id="routeOptimizationGoal">
+                                <option value="">请选择优化目标</option>
+                                <option value="economy">经济航线</option>
+                                <option value="safety">安全航线</option>
+                                <option value="time">时间最优</option>
+                                <option value="comprehensive">综合优化</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <h4><i class="fas fa-map-marker-alt"></i> 起始港口</h4>
+                            <select id="startPort">
+                                <option value="">请选择起始港</option>
+                                <option value="shanghai">上海港</option>
+                                <option value="ningbo">宁波港</option>
+                                <option value="qingdao">青岛港</option>
+                                <option value="tianjin">天津港</option>
+                                <option value="dalian">大连港</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <h4><i class="fas fa-map-marker"></i> 目的港口</h4>
+                            <select id="endPort">
+                                <option value="">请选择目的港</option>
+                                <option value="shanghai">上海港</option>
+                                <option value="ningbo">宁波港</option>
+                                <option value="qingdao">青岛港</option>
+                                <option value="tianjin">天津港</option>
+                                <option value="dalian">大连港</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <h4><i class="fas fa-calendar-alt"></i> 出发时间</h4>
+                            <input type="datetime-local" id="departureTime">
+                        </div>
+
+                        <div class="input-group">
+                            <h4><i class="fas fa-calendar-check"></i> 计划到达</h4>
+                            <input type="datetime-local" id="arrivalTime">
+                        </div>
+
+                        <div class="input-group button-group">
+                            <button class="start-opt-btn" onclick="startRouteOptimization()">
+                                <i class="fas fa-play-circle"></i>
+                                开始优化
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 优化结果部分 -->
+                    <div class="optimization-result" style="display: none;">
+                        <div class="result-overview">
+                            <h3><i class="fas fa-chart-line"></i> 航线优化结果概览</h3>
+                            <div class="overview-grid">
+                                <div class="overview-item">
+                                    <div class="item-header">
+                                        <i class="fas fa-sliders-h"></i>
+                                        <span>优化方案</span>
+                                    </div>
+                                    <div class="item-content">
+                                        <span id="selectedRouteCondition">经济航线</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="overview-item">
+                                    <div class="item-header">
+                                        <i class="fas fa-route"></i>
+                                        <span>航程距离</span>
+                                    </div>
+                                    <div class="item-content">
+                                        <span id="routeDistance">520</span>
+                                        <span class="unit">海里</span>
+                                        <div class="trend-indicator decrease">
+                                            <i class="fas fa-long-arrow-alt-down"></i>
+                                            <span>5.5%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="overview-item">
+                                    <div class="item-header">
+                                        <i class="fas fa-clock"></i>
+                                        <span>预计航行时间</span>
+                                    </div>
+                                    <div class="item-content">
+                                        <span id="estimatedTime">45.5</span>
+                                        <span class="unit">小时</span>
+                                        <div class="trend-indicator decrease">
+                                            <i class="fas fa-long-arrow-alt-down"></i>
+                                            <span>5.2%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="overview-item">
+                                    <div class="item-header">
+                                        <i class="fas fa-gas-pump"></i>
+                                        <span>预计节省燃料</span>
+                                    </div>
+                                    <div class="item-content">
+                                        <span id="fuelSaving">32.5</span>
+                                        <span class="unit">kg</span>
+                                        <div class="trend-indicator decrease">
+                                            <i class="fas fa-long-arrow-alt-down"></i>
+                                            <span>8.4%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 优化方案说明部分 -->
+                    <div class="optimization-scheme" style="display: none;">
+                        <div class="scheme-header">
+                            <h3><i class="fas fa-clipboard-check"></i> 航线优化方案</h3>
+                            <button class="toggle-scheme-btn" onclick="toggleSchemeDetails()">
+                                <i class="fas fa-expand-alt"></i>
+                                <span>展开详情</span>
+                            </button>
+                        </div>
+                        <div class="scheme-cards">
+                            <!-- 航线优化目标卡片 -->
+                            <div class="scheme-card">
+                                <div class="card-header">
+                                    <i class="fas fa-bullseye"></i>
+                                    <h4>优化目标</h4>
+                                </div>
+                                <div class="card-content">
+                                    <p>根据当前航行条件，推荐以下最优航线方案：</p>
+                                    <ul>
+                                        <li>避开恶劣天气区域，降低航行风险</li>
+                                        <li>选择最经济航线，降低燃料消耗15%以上</li>
+                                        <li>优化航行时间，缩短航程30海里以上</li>
+                                        <li>降低单位海里运营成本至142元/海里</li>
+                                        <li>确保准时到港，提高运输效率</li>
+                                        <li>减少船舶摇摆，提升航行安全性</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- 优化依据卡片 -->
+                            <div class="scheme-card">
+                                <div class="card-header">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <h4>优化依据</h4>
+                                </div>
+                                <div class="card-content">
+                                    <div class="basis-section">
+                                        <h5><i class="fas fa-cloud"></i> 气象条件</h5>
+                                        <ul>
+                                            <li>风速：15-20节，阵风22节</li>
+                                            <li>风向：东北风转北风</li>
+                                            <li>气压：1013-1015百帕</li>
+                                            <li>能见度：7-9公里</li>
+                                            <li>天气状况：多云转阴</li>
+                                            <li>降水概率：30%</li>
+                                            <li>相对湿度：75%</li>
+                                            <li>气温：18-22℃</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="basis-section">
+                                        <h5><i class="fas fa-water"></i> 水象条件</h5>
+                                        <ul>
+                                            <li>浪高：2.0-2.5米</li>
+                                            <li>浪向：东北向</li>
+                                            <li>流速：1.8-2.2节</li>
+                                            <li>流向：西南向</li>
+                                            <li>水温：16-18℃</li>
+                                            <li>海况：中浪</li>
+                                            <li>潮汐涨潮期</li>
+                                            <li>潮差：2.5米</li>
+                                            <li>海流类型：沿岸流</li>
+                                            <li>海水密度：1.025 g/cm³</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="basis-section">
+                                        <h5><i class="fas fa-shield-alt"></i> 船舶安全状况</h5>
+                                        <ul>
+                                            <li>船舶吃水：前吃水5.6米，后吃水6.0米</li>
+                                            <li>纵倾状态：1.2度</li>
+                                            <li>横倾状态：0.5度</li>
+                                            <li>稳性状况：良好，GM值1.2米</li>
+                                            <li>船体应力：正常范围内</li>
+                                            <li>结构状态：完好</li>
+                                            <li>设备运行：正常</li>
+                                            <li>通导设备：工作正常</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="basis-section">
+                                        <h5><i class="fas fa-gas-pump"></i> 燃料系统状况</h5>
+                                        <ul>
+                                            <li>氢燃料储量：当前储量85%</li>
+                                            <li>氢气压力：35MPa</li>
+                                            <li>氢气温度：25℃</li>
+                                            <li>氢气纯度：99.999%</li>
+                                            <li>系统效率：52.5%</li>
+                                            <li>燃料利用率：83%</li>
+                                            <li>供氢压力：0.2MPa</li>
+                                            <li>氢耗率：0.82kg/kWh</li>
+                                            <li>剩余航程：约850海里</li>
+                                            <li>燃料电池状态：正常</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ��化建议卡片 -->
+                            <div class="scheme-card">
+                                <div class="card-header">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <h4>优化建议</h4>
+                                </div>
+                                <div class="card-content">
+                                    <div class="advice-section">
+                                        <h5><i class="fas fa-route"></i> 航线调整建议</h5>
+                                        <ul>
+                                            <li>建议航线向南偏移15海里，避开强风区</li>
+                                            <li>通过调整航向角，利用顺流优势</li>
+                                            <li>在浪高较大区域减速航行</li>
+                                            <li>根据潮汐规律优化通航时间</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="advice-section">
+                                        <h5><i class="fas fa-shield-alt"></i> 安全建议</h5>
+                                        <ul>
+                                            <li>避开军事演习区和渔业作业区</li>
+                                            <li>保持安全航速和避碰距离</li>
+                                            <li>注意浅滩礁石和沉船警告区</li>
+                                            <li>遵守交通管制规定</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 预期效果卡片 -->
+                            <div class="scheme-card">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-line"></i>
+                                    <h4>预期效果</h4>
+                                </div>
+                                <div class="card-content">
+                                    <div class="effect-section">
+                                        <h5><i class="fas fa-route"></i> 航行效果</h5>
+                                        <ul>
+                                            <li>航程缩短：550海里 → 520海里 (↓5.5%)</li>
+                                            <li>航时减少：48小时 → 45.5小时 (↓5.2%)</li>
+                                            <li>避让风浪影响：风险等级降低40%</li>
+                                            <li>船舶摇摆幅度降低35%</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="effect-section">
+                                        <h5><i class="fas fa-gas-pump"></i> 燃料效果</h5>
+                                        <ul>
+                                            <li>总耗氢量：385kg → 352.5kg (↓8.4%)</li>
+                                            <li>单位耗氢：0.7kg/nm → 0.65kg/nm (↓7.1%)</li>
+                                            <li>系统效率：52.5% → 55.8% (↑6.3%)</li>
+                                        </ul>
+                                    </div>
+                                  <div class="effect-section">
+                                     <h5><i class="fas fa-dollar-sign"></i> 经济效益</h5>
+                                      <ul>
+                                         <li>航次成本：82500元 → 75800元 (↓8.1%)</li>
+                                       <li>单位成本：150元/nm → 142元/nm (↓5.3%)</li>
+                                       <li>运营效率提升：基准值 → +8.5%</li>
+                                         <li>维护成本：基准值 → -8%</li>
+                                       <li>设备寿命：基准值 → +10%</li>
+                                          <li>投资回报率：标准值 → +12%</li>
+                                      </ul>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 优化效果对比部分 -->
+                    <div class="optimization-comparison" style="display: none;">
+                        <div class="comparison-header">
+                            <h3><i class="fas fa-balance-scale"></i> 航线优化效果对比</h3>
+                            <button class="toggle-comparison-btn" onclick="toggleComparisonDetails()">
+                                <i class="fas fa-expand-alt"></i>
+                                <span>展开详情</span>
+                            </button>
+                        </div>
+                        <div class="comparison-grid" style="display: none;">
+                            <!-- 航线参数对比 -->
+                            <div class="comparison-card">
+                                <div class="card-header">
+                                    <i class="fas fa-route"></i>
+                                    <h4>航线参数对比</h4>
+                                </div>
+                                <div class="comparison-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>参数</th>
+                                                <th>原航线</th>
+                                                <th>优化航线</th>
+                                                <th>变化</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>航线距离</td>
+                                                <td>550海里</td>
+                                                <td>520海里</td>
+                                                <td class="decrease">↓5.5%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>预计航时</td>
+                                                <td>48小时</td>
+                                                <td>45.5小时</td>
+                                                <td class="decrease">↓5.2%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>平均航速</td>
+                                                <td>11.5节</td>
+                                                <td>11.8节</td>
+                                                <td class="increase">↑2.6%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>航线偏差</td>
+                                                <td>基准值</td>
+                                                <td>-15海里</td>
+                                                <td class="decrease">↓2.7%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- 安全性能对比 -->
+                            <div class="comparison-card">
+                                <div class="card-header">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <h4>经济与安全性能对比</h4>
+                                </div>
+                                <div class="comparison-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>参数</th>
+                                                <th>原航线</th>
+                                                <th>优化航线</th>
+                                                <th>变化</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 经济性能指标 -->
+                                            <tr>
+                                                <td>航次成本</td>
+                                                <td>82500元</td>
+                                                <td>75800元</td>
+                                                <td class="decrease">↓8.1%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>单位里程成本</td>
+                                                <td>150元/nm</td>
+                                                <td>142元/nm</td>
+                                                <td class="decrease">↓5.3%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>维护成本</td>
+                                                <td>基准值</td>
+                                                <td>-8%</td>
+                                                <td class="decrease">↓8.0%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>投资回报率</td>
+                                                <td>基准值</td>
+                                                <td>+12%</td>
+                                                <td class="increase">↑12.0%</td>
+                                            </tr>
+                                            <!-- 安全性能指标 -->
+                                            <tr>
+                                                <td>天气风险</td>
+                                                <td>中等</td>
+                                                <td>低</td>
+                                                <td class="decrease">↓35%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>航行风险</td>
+                                                <td>中等</td>
+                                                <td>低</td>
+                                                <td class="decrease">↓40%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>避碰风险</td>
+                                                <td>一般</td>
+                                                <td>低</td>
+                                                <td class="decrease">↓25%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>综合安全性</td>
+                                                <td>基准值</td>
+                                                <td>+30%</td>
+                                                <td class="increase">↑30.0%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                          <!-- 燃料系统对比 -->
+                           <div class="comparison-card">
+                               <div class="card-header">
+                                   <i class="fas fa-gas-pump"></i>
+                                   <h4>燃料系统对比</h4>
+                               </div>
+                               <div class="comparison-table">
+                                   <table>
+                                       <thead>
+                                           <tr>
+                                               <th>参数</th>
+                                               <th>原航线</th>
+                                               <th>优化航线</th>
+                                               <th>变化</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody>
+                                           <tr>
+                                               <td>总燃料消耗</td>
+                                               <td>385kg</td>
+                                               <td>352.5kg</td>
+                                               <td class="decrease">↓8.4%</td>
+                                           </tr>
+                                           <tr>
+                                               <td>单位海里消耗</td>
+                                               <td>0.7kg/nm</td>
+                                               <td>0.65kg/nm</td>
+                                               <td class="decrease">↓7.1%</td>
+                                           </tr>
+                                           <tr>
+                                               <td>燃料利用率</td>
+                                               <td>82%</td>
+                                               <td>85%</td>
+                                               <td class="increase">↑3.7%</td>
+                                          </tr>
+                                           <tr>
+                                               <td>系统效率</td>
+                                               <td>52.5%</td>
+                                             <td>55.8%</td>
+                                               <td class="increase">↑6.3%</td>
+                                           </tr>
+                                       </tbody>
+                                   </table>
+                               </div>
+                           </div>
+
+                           <!-- 动力系统对比 -->
+                           <div class="comparison-card">
+                               <div class="card-header">
+                                   <i class="fas fa-bolt"></i>
+                                   <h4>动力系统对比</h4>
+                             </div>
+                               <div class="comparison-table">
+                                   <table>
+                                       <thead>
+                                           <tr>
+                                               <th>参数</th>
+                                               <th>原航线</th>
+                                               <th>优化航线</th>
+                                               <th>变化</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody>
+                                           <tr>
+                                               <td>电堆功率</td>
+                                               <td>980kW</td>
+                                               <td>920kW</td>
+                                               <td class="decrease">↓6.1%</td>
+                                           </tr>
+                                           <tr>
+                                               <td>电堆电压</td>
+                                               <td>625V</td>
+                                               <td>645V</td>
+                                               <td class="increase">↑3.2%</td>
+                                           </tr>
+                                           <tr>
+                                               <td>电机效率</td>
+                                               <td>95%</td>
+                                              <td>96.2%</td>
+                                               <td class="increase">↑1.3%</td>
+                                           </tr>
+                                           <tr>
+                                               <td>推进效率</td>
+                                               <td>68%</td>
+                                               <td>71%</td>
+                                               <td class="increase">↑4.4%</td>
+                                           </tr>
+                                       </tbody>
+                                   </table>
+                               </div>
+                           </div>
+
+                           <!-- 经济效益对比 -
+                        </div>
+                    </div>
+                </div>
+
+                <div class="optimization-content" id="trimContent" style="display: none;">
+                    <!-- 纵倾优化内容保持不变 -->
+
+                <div class="optimization-content" id="energyContent" style="display: none;">
+                    <!-- 能量管理优化内容保持不变 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保留原有的 Font Awesome 和 ECharts 引用 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化侧边栏菜单项的点击事件
+            document.querySelectorAll('.menu-item').forEach(item => {
+                const h2 = item.querySelector('h2');
+                if (h2) {
+                    h2.addEventListener('click', () => {
+                        const menuId = item.id;
+                        toggleMenuItem(menuId);
+                    });
+                }
+            });
+
+            // 初始化优化按钮的点击事件
+            document.querySelectorAll('.opt-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const type = button.getAttribute('data-type');
+                    if (type) {
+                        selectOptimization(type);
+                    }
+                });
+            });
+        });
+
+        function toggleMenuItem(menuId) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const targetMenuItem = document.getElementById(menuId).closest('.menu-item');
+            
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const subMenu = item.querySelector('ul');
+                    if (subMenu) {
+                        subMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            targetMenuItem.classList.add('active');
+            const subMenu = targetMenuItem.querySelector('ul');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+
+        function selectOptimization(type) {
+            // 移除所有按钮的选中状态
+            document.querySelectorAll('.opt-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 隐藏所有内容区域
+            document.querySelectorAll('.optimization-content').forEach(content => {
+                content.style.display = 'none';
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(-10px)';
+            });
+            
+            // 获取被点击的按钮并添加选中状态
+            const selectedButton = document.querySelector(`.opt-button[data-type="${type}"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('selected');
+            }
+            
+            // 显示对应的内容区域
+            const contentId = `${type}Content`;
+            const content = document.getElementById(contentId);
+            
+            if (content) {
+                content.style.display = 'block';
+                requestAnimationFrame(() => {
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                });
+            }
+        }
+
+        function toggleSchemeDetails() {
+            const schemeCards = document.querySelector('.scheme-cards');
+            const btn = document.querySelector('.toggle-scheme-btn');
+            
+            if (!schemeCards.classList.contains('visible')) {
+                // 展开
+                btn.innerHTML = '<i class="fas fa-compress-alt"></i><span>收起详情</span>';
+                btn.classList.add('expanded');
+                
+                requestAnimationFrame(() => {
+                    schemeCards.classList.add('visible');
+                    schemeCards.querySelectorAll('.scheme-card').forEach((card, index) => {
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    });
+                });
+            } else {
+                // 折叠
+                schemeCards.classList.remove('visible');
+                schemeCards.querySelectorAll('.scheme-card').forEach(card => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                });
+                btn.innerHTML = '<i class="fas fa-expand-alt"></i><span>展开详情</span>';
+                btn.classList.remove('expanded');
+            }
+        }
+
+        function toggleComparisonDetails() {
+            const activeContent = document.querySelector('.optimization-content[style*="display: block"]');
+            if (!activeContent) return;
+            
+            const comparisonGrid = activeContent.querySelector('.comparison-grid');
+            const btn = activeContent.querySelector('.toggle-comparison-btn');
+            
+            if (!comparisonGrid || !btn) return;
+            
+            if (comparisonGrid.style.display === 'none' || comparisonGrid.style.display === '') {
+                comparisonGrid.style.display = 'grid';
+                btn.innerHTML = '<i class="fas fa-compress-alt"></i><span>收起详情</span>';
+                btn.classList.add('expanded');
+                
+                requestAnimationFrame(() => {
+                    comparisonGrid.classList.add('visible');
+                    comparisonGrid.querySelectorAll('.comparison-card').forEach((card, index) => {
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0) scale(1)';
+                        }, index * 100);
+                    });
+                });
+            } else {
+                comparisonGrid.classList.remove('visible');
+                comparisonGrid.querySelectorAll('.comparison-card').forEach(card => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(30px) scale(0.95)';
+                });
+                setTimeout(() => {
+                    comparisonGrid.style.display = 'none';
+                }, 600);
+                btn.innerHTML = '<i class="fas fa-expand-alt"></i><span>展开详情</span>';
+                btn.classList.remove('expanded');
+            }
+        }
+
+        // 修改 startRouteOptimization 函数
+        function startRouteOptimization() {
+            const optimizationGoal = document.getElementById('routeOptimizationGoal').value;
+            const startPort = document.getElementById('startPort').value;
+            const endPort = document.getElementById('endPort').value;
+            const departureTime = document.getElementById('departureTime').value;
+            const arrivalTime = document.getElementById('arrivalTime').value;
+
+            if (!optimizationGoal || !startPort || !endPort || !departureTime || !arrivalTime) {
+                alert('请填写完整的航线优化条件信息');
+                return;
+            }
+
+            // 显示加载动画
+            const loadingAnimation = document.createElement('div');
+            loadingAnimation.className = 'loading-animation';
+            loadingAnimation.innerHTML = `
+                <div class="spinner"></div>
+                <p>正在计算航线优化方案...</p>
+            `;
+            document.body.appendChild(loadingAnimation);
+
+            // 模拟优化计算过程
+            setTimeout(() => {
+                // 移除加载动画
+                loadingAnimation.remove();
+
+                // 更新优化结果显示
+                document.getElementById('selectedRouteCondition').textContent = 
+                    document.getElementById('routeOptimizationGoal').options[
+                        document.getElementById('routeOptimizationGoal').selectedIndex
+                    ].text;
+
+                // 获取所有需要显示的结果元素
+                const resultElements = [
+                    document.querySelector('.optimization-result'),
+                    document.querySelector('.optimization-scheme'),
+                    document.querySelector('.optimization-comparison')
+                ];
+
+                // 依次显示每个结果模块，添加动画效果
+                resultElements.forEach((element, index) => {
+                    if (element) {
+                        setTimeout(() => {
+                            // 重置样式
+                            element.style.opacity = '0';
+                            element.style.transform = 'translateY(30px)';
+                            element.style.display = 'block';
+                            
+                            // 触发动画
+                            requestAnimationFrame(() => {
+                                element.style.transition = 'all 0.5s ease-out';
+                                element.style.opacity = '1';
+                                element.style.transform = 'translateY(0)';
+                            });
+
+                            // 如果是优化方案，初始化并显示scheme-cards
+                            if (element.classList.contains('optimization-scheme')) {
+                                const schemeCards = element.querySelector('.scheme-cards');
+                                if (schemeCards) {
+                                    schemeCards.style.display = 'grid';
+                                    requestAnimationFrame(() => {
+                                        schemeCards.classList.add('visible');
+                                    });
+                                }
+                            }
+                        }, index * 300);
+                    }
+                });
+
+                // 更新结果数据
+                updateRouteOptimizationResults(optimizationGoal, startPort, endPort);
+
+            }, 1500);
+        }
+
+        // 添加更新结果数据的函数
+        function updateRouteOptimizationResults(optimizationGoal, startPort, endPort) {
+            // 根据不同的优化目标设置不同的结果数据
+            const resultData = {
+                economy: {
+                    distance: 520,
+                    time: 45.5,
+                    fuelSaving: 32.5
+                },
+                safety: {
+                    distance: 535,
+                    time: 47.0,
+                    fuelSaving: 28.5
+                },
+                time: {
+                    distance: 510,
+                    time: 43.5,
+                    fuelSaving: 25.0
+                },
+                comprehensive: {
+                    distance: 525,
+                    time: 46.0,
+                    fuelSaving: 30.0
+                }
+            };
+
+            const data = resultData[optimizationGoal] || resultData.comprehensive;
+
+            // 更新结果显示
+            document.getElementById('routeDistance').textContent = data.distance;
+            document.getElementById('estimatedTime').textContent = data.time;
+            document.getElementById('fuelSaving').textContent = data.fuelSaving;
+        }
+
+        // 修改 showRouteContent 函数
+        function showRouteContent() {
+            // 隐藏所有优化内容
+            document.querySelectorAll('.optimization-content').forEach(content => {
+                content.style.display = 'none';
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(-10px)';
+            });
+            
+            // 显示航线优化内容
+            const routeContent = document.getElementById('routeContent');
+            if (routeContent) {
+                routeContent.style.display = 'block';
+                requestAnimationFrame(() => {
+                    routeContent.style.opacity = '1';
+                    routeContent.style.transform = 'translateY(0)';
+                });
+            }
+        }
+
+        // 修改页面加载时的初始化逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 重置所有卡片的active状态
+            document.querySelectorAll('.optimization-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // 自动激活当前页面对应的卡片
+            const routeCard = document.querySelector('.optimization-card:nth-child(2)');
+            if (routeCard) {
+                routeCard.classList.add('active');
+            }
+            
+            // 显示航线优化内容
+            showRouteContent();
+        });
+    </script>
+
+    <!-- 添加加载��画样式 -->
+    <style>
+        .loading-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

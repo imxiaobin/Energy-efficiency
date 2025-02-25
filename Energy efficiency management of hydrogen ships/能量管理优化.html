@@ -1,0 +1,3466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能效提升预测</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 基础页面布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 侧边栏菜单图标 */
+        #menuItem0 h2::before { content: "\f54b"; color: #3498db; }
+        #menuItem1 h2::before { content: "\f080"; color: #2ecc71; }
+        #menuItem2 h2::before { content: "\f0e4"; color: #e67e22; }
+        #menuItem3 h2::before { content: "\f5eb"; color: #e74c3c; }
+        #menuItemReportGen h2::before { content: "\f15c"; color: #9b59b6; }
+
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar .menu-item h2:hover,
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+            overflow-y: auto;
+            height: auto;
+            min-height: calc(100vh - 40px);
+        }
+
+        /* 优化按钮组样式 */
+        .optimization-selection {
+            background: linear-gradient(135deg, rgba(236, 240, 245, 0.8), rgba(230, 238, 246, 0.9));
+            border-radius: 20px;
+            padding: 20px;  /* 从25px改为20px */
+            margin-bottom: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .optimization-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* 从280px改为250px */
+            gap: 15px; /* 从20px改为15px */
+        }
+
+        .optimization-card {
+            background: linear-gradient(145deg, #ffffff, #f0f7ff);
+            border-radius: 12px; /* 从15px改为12px */
+            padding: 15px; /* 从20px改为15px */
+            height: 90px; /* 从120px改为90px */
+            min-height: 90px; /* 从120px改为90px */
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 从15px改为12px */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .optimization-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.5));
+            z-index: 1;
+        }
+
+        .optimization-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(145deg, #f0f7ff, #e6f0ff);
+        }
+
+        .optimization-card.active {
+            background: linear-gradient(145deg, #e8f4ff, #d4e9ff);
+            border: 1px solid #3498db;
+            box-shadow: 
+                0 8px 25px rgba(52, 152, 219, 0.15),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-icon {
+            width: 40px; /* 从45px改为40px */
+            height: 40px; /* 从45px改为40px */
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 10px; /* 从12px改为10px */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-icon i {
+            color: white;
+            font-size: 18px; /* 从20px改为18px */
+        }
+
+        .card-content {
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-content h3 {
+            color: #2c3e50;
+            margin: 0 0 4px 0; /* 从5px改为4px */
+            font-size: 15px; /* 从16px改为15px */
+            font-weight: 600;
+        }
+
+        .card-content p {
+            color: #7f8c8d;
+            margin: 0;
+            font-size: 12px; /* 从13px改为12px */
+            line-height: 1.4;
+        }
+
+        /* 添加卡片激活时的图标效果 */
+        .optimization-card.active .card-icon {
+            background: linear-gradient(135deg, #2980b9, #2573a7);
+            box-shadow: 
+                0 4px 15px rgba(52, 152, 219, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.1);
+        }
+
+        /* 添加卡片激活时的文字效果 */
+        .optimization-card.active .card-content h3 {
+            color: #2980b9;
+        }
+
+        .optimization-card.active .card-content p {
+            color: #34495e;
+        }
+
+        @media (max-width: 768px) {
+            .optimization-card {
+                height: 80px; /* 从110px改为80px */
+                padding: 12px; /* 从15px改为12px */
+            }
+            
+            .card-icon {
+                width: 35px; /* 从40px改为35px */
+                height: 35px; /* 从40px改为35px */
+            }
+            
+            .card-icon i {
+                font-size: 16px; /* 从18px改为16px */
+            }
+            
+            .card-content h3 {
+                font-size: 14px; /* 从15px改为14px */
+            }
+            
+            .card-content p {
+                font-size: 11px; /* 从12px改为11px */
+            }
+        }
+
+        /* 在现有样式后添加页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 修改 header-content 的样式 */
+        .header-content {
+            display: flex;
+            justify-content: flex-end; /* 已有这个属性 */
+        }
+
+        /* 修改 navbar 的样式 */
+        .navbar {
+            grid-column: 1 / -1;
+            margin-left: auto; /* 添加这行 */
+        }
+
+        /* 修改 nav-list 的样式 */
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px 0; /* 修改这行 */
+            padding: 10px;
+            gap: 20px;
+            justify-content: flex-end; /* 添加这行 */
+        }
+
+        /* 修改 nav-item 的样式 */
+        .nav-item {
+            margin: 0;
+            display: flex; /* 添加这行 */
+            justify-content: flex-end; /* 添加这行 */
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* 在样式部分添加菜单折叠相关的CSS */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 在现有样式中添加面包屑导航样式 */
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .breadcrumb i {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .breadcrumb .current-page {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .breadcrumb span {
+            position: relative;
+            padding: 0 5px;
+        }
+
+        .breadcrumb i.fa-angle-right {
+            margin: 0 5px;
+            color: #95a5a6;
+        }
+
+        .energy-management-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            padding: 0;
+            margin-top: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border: none;
+        }
+
+        .energy-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .energy-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header i {
+            font-size: 1.5em;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .strategy-selector select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .monitor-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .monitor-item .label {
+            display: block;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .monitor-item .value {
+            display: block;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* 在已有样式后添加 */
+        .input-section,
+        .optimization-results {
+            background: linear-gradient(135deg, rgba(236, 240, 245, 0.8), rgba(230, 238, 246, 0.9));
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .input-section::before,
+        .optimization-results::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle at center,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 30%,
+                transparent 70%
+            );
+            opacity: 0.7;
+            animation: shine 15s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shine {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid rgba(52, 152, 219, 0.2);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            margin: -25px -25px 20px -25px;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #f8fafd, #f1f5f9);
+            border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .section-header i {
+            font-size: 1.4em;
+            color: #3498db;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.05),
+                inset 0 1px 2px rgba(255, 255, 255, 0.9);
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.25em;
+            font-weight: 600;
+            color: #2c3e50;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+            padding-top: 2px;
+        }
+
+        .input-form,
+        .results-grid {
+            padding: 15px 5px 5px 5px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 12px 15px;
+            height: 45px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .form-control:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(52, 152, 219, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #3498db;
+            transform: translateY(-1px);
+            box-shadow: 
+                0 0 0 3px rgba(52, 152, 219, 0.1),
+                0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233498db' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.762L10.825 4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
+        }
+
+        input[type="datetime-local"].form-control {
+            padding-right: 15px;
+        }
+
+        input[type="number"].form-control {
+            padding-right: 15px;
+        }
+
+        select.form-control,
+        input[type="datetime-local"].form-control {
+            height: 45px;
+        }
+
+        select.form-control {
+            cursor: pointer;
+            background: white;
+        }
+
+        input[type="number"].form-control::-webkit-inner-spin-button,
+        input[type="number"].form-control::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .form-control::placeholder {
+            color: #95a5a6;
+        }
+
+        .optimization-results {
+            margin-top: 0;
+        }
+
+        /* 修改 results-grid 的样式 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: minmax(100px, auto);
+            gap: 25px; /* 增加卡片之间的间距 */
+            padding: 5px;
+            margin-top: 25px;
+        }
+
+        /* 调整 result-card 的整体布局和背景效果 */
+        .result-card {
+            height: 100px;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            padding: 12px 15px 12px 65px;
+            position: relative;
+            background: linear-gradient(145deg, 
+                rgba(255, 255, 255, 0.6), 
+                rgba(255, 255, 255, 0.4)
+            );
+            border-radius: 15px;
+            box-shadow: 
+                0 8px 16px rgba(0, 0, 0, 0.06),
+                0 4px 8px rgba(0, 0, 0, 0.08),
+                inset 0 2px 3px rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 为不同卡片添加不同的背景色调 */
+        .result-card:nth-child(1) {
+            background: linear-gradient(145deg,
+                rgba(52, 152, 219, 0.1),
+                rgba(52, 152, 219, 0.05)
+            );
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .result-card:nth-child(2) {
+            background: linear-gradient(145deg,
+                rgba(39, 174, 96, 0.1),
+                rgba(39, 174, 96, 0.05)
+            );
+            border: 1px solid rgba(39, 174, 96, 0.2);
+        }
+
+        .result-card:nth-child(3) {
+            background: linear-gradient(145deg,
+                rgba(230, 126, 34, 0.1),
+                rgba(230, 126, 34, 0.05)
+            );
+            border: 1px solid rgba(230, 126, 34, 0.2);
+        }
+
+        .result-card:nth-child(4) {
+            background: linear-gradient(145deg,
+                rgba(155, 89, 182, 0.1),
+                rgba(155, 89, 182, 0.05)
+            );
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        /* 调整卡片悬停效果 */
+        .result-card:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(145deg,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.5)
+            );
+        }
+
+        /* 为不同卡片添加悬停时的特殊背景效果 */
+        .result-card:nth-child(1):hover {
+            background: linear-gradient(145deg,
+                rgba(52, 152, 219, 0.15),
+                rgba(52, 152, 219, 0.08)
+            );
+        }
+
+        .result-card:nth-child(2):hover {
+            background: linear-gradient(145deg,
+                rgba(39, 174, 96, 0.15),
+                rgba(39, 174, 96, 0.08)
+            );
+        }
+
+        .result-card:nth-child(3):hover {
+            background: linear-gradient(145deg,
+                rgba(230, 126, 34, 0.15),
+                rgba(230, 126, 34, 0.08)
+            );
+        }
+
+        .result-card:nth-child(4):hover {
+            background: linear-gradient(145deg,
+                rgba(155, 89, 182, 0.15),
+                rgba(155, 89, 182, 0.08)
+            );
+        }
+
+        /* 调整内部光效 */
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* 调整图标样式和位置 */
+        .result-card .result-icon {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.2),
+                inset 0 2px 3px rgba(255, 255, 255, 0.3);
+        }
+
+        /* 调整内容区域布局 */
+        .result-card .result-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 8px;
+            min-width: 0;
+            width: 100%;
+            align-items: flex-start; /* 改为左对齐 */
+            justify-content: flex-start; /* 改为顶部对齐 */
+            margin-top: 2px; /* 微调顶部间距 */
+        }
+
+        /* 修改标题样式 */
+        .result-card .result-content h4 {
+            margin: 0;
+            font-size: 1.2em;
+            color: rgba(44, 62, 80, 0.85);
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            padding: 0;
+            text-align: left; /* 确保文字左对齐 */
+        }
+
+        /* 调整数值显示区域和趋势指标的布局 */
+        .result-card .result-value {
+            display: flex;
+            align-items: baseline;
+            gap: 8px; /* 增加数值和趋势指标之间的间距 */
+            margin: 2px 0;
+            justify-content: flex-start;
+        }
+
+        /* 修改趋势指标样式 */
+        .result-card .trend {
+            font-size: 0.85em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin: 0;
+            background: transparent;
+            white-space: nowrap;
+        }
+
+        .result-card .trend i {
+            font-size: 0.9em;
+        }
+
+        .result-card .trend span {
+            font-weight: 500;
+        }
+
+        /* 调整趋势指标颜色 */
+        .result-card .trend.positive {
+            color: #27ae60;
+        }
+
+        .result-card .trend.negative {
+            color: #e74c3c;
+        }
+
+        /* 响应式调整 */
+        @media screen and (max-width: 1400px) {
+            .result-card {
+                padding: 10px 12px 10px 60px; /* 调整内边距 */
+            }
+            
+            .result-card .result-icon {
+                width: 38px;
+                height: 38px;
+                top: 10px;
+                left: 10px;
+            }
+        }
+
+        @media screen and (max-width: 1200px) {
+            .result-card {
+                padding: 8px 10px 8px 55px;
+                height: 90px;
+            }
+            
+            .result-card .result-icon {
+                width: 35px;
+                height: 35px;
+                top: 8px;
+                left: 8px;
+            }
+        }
+
+        /* 为不同卡片设置不同的图标渐变色和阴影 */
+        .result-card:nth-child(1) .result-icon {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            box-shadow: 
+                0 4px 8px rgba(52, 152, 219, 0.3),
+                inset 0 2px 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card:nth-child(2) .result-icon {
+            background: linear-gradient(135deg, #27ae60, #219a52);
+            box-shadow: 
+                0 4px 8px rgba(39, 174, 96, 0.3),
+                inset 0 2px 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card:nth-child(3) .result-icon {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            box-shadow: 
+                0 4px 8px rgba(230, 126, 34, 0.3),
+                inset 0 2px 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card:nth-child(4) .result-icon {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            box-shadow: 
+                0 4px 8px rgba(155, 89, 182, 0.3),
+                inset 0 2px 3px rgba(255, 255, 255, 0.2);
+        }
+
+        /* 添加卡片内部阴影效果增强立体感 */
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* 调整趋势指标样式 */
+        .result-card .trend {
+            font-size: 0.8em;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+            max-width: 100%; /* 确保不会超出容器 */
+            white-space: nowrap;
+        }
+
+        /* 调整第一个卡片（优化条件）的特殊样式 */
+        .result-card[data-card="fuel"] .strategy-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 2px 0;
+            letter-spacing: 0.5px;
+            text-align: left; /* 确保文字左对齐 */
+        }
+
+        /* 为不同卡片设置不同的标题颜色 */
+        .result-card:nth-child(1) h4 {
+            color: #3498db;
+        }
+
+        .result-card:nth-child(2) h4 {
+            color: #27ae60;
+        }
+
+        .result-card:nth-child(3) h4 {
+            color: #e67e22;
+        }
+
+        .result-card:nth-child(4) h4 {
+            color: #9b59b6;
+        }
+
+        /* 响应式调整 */
+        @media screen and (max-width: 1400px) {
+            .result-card .result-content h4 {
+                font-size: 1.1em;
+            }
+        }
+
+        @media screen and (max-width: 1200px) {
+            .result-card .result-content h4 {
+                font-size: 1em;
+            }
+        }
+
+        .result-card:hover {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.2), 
+                rgba(255, 255, 255, 0.1)
+            );
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 24px rgba(0, 0, 0, 0.12),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        }
+
+        .result-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            font-size: 1.3em;
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+        }
+
+        .result-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .result-content h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 0.95em;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .result-value {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
+            margin: 10px 0;
+        }
+
+        .result-value .number {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1;
+        }
+
+        .result-value .unit {
+            font-size: 1em;
+            color: #7f8c8d;
+            margin-left: 2px;
+        }
+
+        .trend {
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+            width: fit-content;
+            margin: 0 auto; /* 居中显示 */
+        }
+
+        .trend.positive {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.08);
+        }
+
+        .trend.negative {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.08);
+        }
+
+        .trend i {
+            font-size: 1.1em;
+            margin-right: 2px;
+        }
+
+        /* 修改 result-card 的内容布局 */
+        .result-card .result-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px 20px 20px;
+            gap: 10px;
+            align-items: center; /* 居中对齐内容 */
+            justify-content: center;
+        }
+
+        .result-card h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 0.95em;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .result-card .result-value {
+            flex: 0;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .result-card .result-icon {
+            margin: 15px auto;
+            margin-bottom: 5px;
+        }
+
+        /* 修�������������件卡的趋势显示器样式 */
+        #strategyDetail {
+            background: rgba(52, 152, 219, 0.08);
+            border: none;
+            color: #3498db;
+        }
+
+        #strategyDetail.positive {
+            background: rgba(39, 174, 96, 0.08);
+            border: none;
+            color: #27ae60;
+        }
+
+        /* 添加趋势图标的动画效果 */
+        .trend.positive i {
+            animation: bounceUp 2s infinite;
+        }
+
+        .trend.negative i {
+            animation: bounceDown 2s infinite;
+        }
+
+        @keyframes bounceUp {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+
+        @keyframes bounceDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(2px); }
+        }
+
+        /* 修改 input-form 的样式，使其水平排列 */
+        .input-form {
+            display: flex;  /* 改为flex布局 */
+            justify-content: space-between;  /* 均匀分布 */
+            gap: 20px;  /* 元素之间的间距 */
+            padding: 15px 5px 5px 5px;
+        }
+
+        /* 修改 form-group 的样式以适应新布局 */
+        .form-group {
+            flex: 1;  /* 让每个表单组件占据相等的空间 */
+            min-width: 200px;  /* 设置最小宽度以防止过度压缩 */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 确保表单控件在较窄屏幕上也能正常显示 */
+        @media screen and (max-width: 1200px) {
+            .input-form {
+                flex-wrap: wrap;  /* 在较窄屏幕上允许换行 */
+            }
+            
+            .form-group {
+                flex: 1 1 calc(50% - 10px);  /* 在中等屏幕上每行显示两个 */
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .form-group {
+                flex: 1 1 100%;  /* 在小屏幕上每行显示一个 */
+            }
+        }
+
+        .strategy-name {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2c3e50;
+            display: block;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        #strategyDetail {
+            color: #7f8c8d;
+        }
+
+        #strategyDetail.positive {
+            color: #27ae60;
+        }
+
+        #strategyDetail i {
+            margin-right: 5px;
+        }
+
+        /* 在 optimization-results 后添加新的模块 */
+        .optimization-plan {
+            background: linear-gradient(135deg, rgba(236, 240, 245, 0.8), rgba(230, 238, 246, 0.9));
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .optimization-plan::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle at center,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 30%,
+                transparent 70%
+            );
+            opacity: 0.7;
+            animation: shine 15s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shine {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        }
+
+        .optimization-plan .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid rgba(52, 152, 219, 0.2);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            margin: -25px -25px 20px -25px;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #f8fafd, #f1f5f9);
+            border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .optimization-plan .section-header i {
+            font-size: 1.4em;
+            color: #3498db;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.05),
+                inset 0 1px 2px rgba(255, 255, 255, 0.9);
+        }
+
+        .optimization-plan .section-header h3 {
+            margin: 0;
+            font-size: 1.25em;
+            font-weight: 600;
+            color: #2c3e50;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+            padding-top: 2px;
+        }
+
+        .optimization-plan .plan-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 350px); /* 设置固定的两行高度 */
+            gap: 25px;
+            padding: 15px 5px;
+        }
+
+        .optimization-plan .plan-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            height: 350px; /* 固定卡片高度 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .optimization-plan .plan-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .optimization-plan .plan-header {
+            padding: 8px 20px; /* 减小内边距 */
+            color: white;
+            flex-shrink: 0;
+            height: 25px; /* 减header高度为25px */
+            display: flex;
+            align-items: center;
+        }
+
+        .optimization-plan .plan-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            height: calc(350px - 25px); /* 总高度减去新的header高度 */
+        }
+
+        .optimization-plan .plan-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .optimization-plan .plan-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .optimization-plan .plan-list li:last-child {
+            border-bottom: none;
+        }
+
+        .optimization-plan .plan-list li > i {
+            font-size: 1.2em;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .optimization-plan .parameter-details {
+            margin-top: 12px;
+            padding: 12px 15px;
+            background: rgba(52, 152, 219, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .optimization-plan .parameter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .optimization-plan .parameter-item:not(:last-child) {
+            border-bottom: 1px dashed rgba(52, 152, 219, 0.1);
+        }
+
+        .optimization-plan .parameter-item .param-name {
+            color: #34495e;
+            font-weight: 500;
+        }
+
+        .optimization-plan .parameter-item .param-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .optimization-plan .parameter-item .param-unit {
+            color: #95a5a6;
+            font-size: 0.9em;
+        }
+
+        /* 添加响应式布 */
+        @media screen and (max-width: 1200px) {
+            .optimization-plan .plan-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 350px); /* 保持每个卡片高度一致 */
+            }
+        }
+
+        /* 确保最后一个卡片的底部对齐 */
+        .optimization-plan .plan-grid > :last-child {
+            margin-bottom: 0;
+        }
+
+        /* 添加优化方案说明模块的样式 */
+        .optimization-plan {
+            background: linear-gradient(135deg, rgba(236, 240, 245, 0.8), rgba(230, 238, 246, 0.9));
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .plan-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            padding: 15px 5px;
+            align-items: start; /* 确保卡片从顶部开始对齐 */
+        }
+
+        .plan-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .plan-header {
+            padding: 8px 20px; /* 减小内边距 */
+            background: linear-gradient(135deg, #3498db, #2980b9); /* 默认渐变色 */
+            color: white;
+            flex-shrink: 0; /* 防止头部被压缩 */
+        }
+
+        .plan-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto; /* 添加垂直滚动条 */
+            height: calc(350px - 25px); /* 总高度减去新的header高度 */
+        }
+
+        .plan-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .plan-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .plan-list li:last-child {
+            border-bottom: none;
+        }
+
+        .plan-list li > i {
+            font-size: 1.2em;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .plan-list .parameter-details {
+            margin-top: 12px;
+            padding: 12px 15px;
+            background: rgba(52, 152, 219, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .plan-list .parameter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .plan-list .parameter-item:not(:last-child) {
+            border-bottom: 1px dashed rgba(52, 152, 219, 0.1);
+        }
+
+        .plan-list .parameter-item .param-name {
+            color: #34495e;
+            font-weight: 500;
+        }
+
+        .plan-list .parameter-item .param-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .plan-list .parameter-item .param-unit {
+            color: #95a5a6;
+            font-size: 0.9em;
+        }
+
+        /* 添加响应式布局 */
+        @media screen and (max-width: 1200px) {
+            .plan-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 确保最后一个卡片的底部对齐 */
+        .plan-grid > :last-child {
+            margin-bottom: 0;
+        }
+
+        /* 自定义滚动条样式 */
+        .plan-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .plan-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        .plan-content::-webkit-scrollbar-thumb {
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 3px;
+        }
+
+        .plan-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(52, 152, 219, 0.5);
+        }
+
+        /* 为不同卡片设置不同的蓝色系渐变色 */
+        .plan-card:nth-child(1) .plan-header {
+            background: linear-gradient(to right, rgba(52, 152, 219, 0.8), rgba(41, 128, 185, 0.7)); /* 标准蓝 */
+        }
+
+        .plan-card:nth-child(2) .plan-header {
+            background: linear-gradient(to right, rgba(52, 152, 219, 0.75), rgba(30, 139, 195, 0.65)); /* 稍浅蓝 */
+        }
+
+        .plan-card:nth-child(3) .plan-header {
+            background: linear-gradient(to right, rgba(52, 152, 219, 0.7), rgba(25, 118, 210, 0.6)); /* 深蓝 */
+        }
+
+        .plan-card:nth-child(4) .plan-header {
+            background: linear-gradient(to right, rgba(52, 152, 219, 0.65), rgba(41, 128, 185, 0.55)); /* 最浅蓝 */
+        }
+
+        /* 添加悬停效果 */
+        .plan-card:hover .plan-header {
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.9), 
+                rgba(41, 128, 185, 0.8)
+            );
+        }
+
+        .plan-card:nth-child(2):hover .plan-header {
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.85), 
+                rgba(30, 139, 195, 0.75)
+            );
+        }
+
+        .plan-card:nth-child(3):hover .plan-header {
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.8), 
+                rgba(25, 118, 210, 0.7)
+            );
+        }
+
+        .plan-card:nth-child(4):hover .plan-header {
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.75), 
+                rgba(41, 128, 185, 0.65)
+            );
+        }
+
+        /* 响应式布局调 */
+        @media screen and (max-width: 1200px) {
+            .plan-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(2, 250px) repeat(2, 420px);
+                min-height: auto;
+            }
+        }
+
+        /* 调整卡片头部样式 */
+        .plan-header {
+            padding: 8px 20px; /* 减小内边距 */
+            color: white;
+            flex-shrink: 0;
+            height: 25px; /* 减小header高度为25px */
+            display: flex;
+            align-items: center;
+        }
+
+        /* 调整卡片内容区域高度 */
+        .plan-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            height: calc(350px - 25px); /* 总高度减去新的header高度 */
+        }
+
+        /* 调整header中的图标和字大小 */
+        .plan-header i {
+            font-size: 1em; /* ���小图标大小 */
+            margin-right: 8px;
+        }
+
+        .plan-header h4 {
+            font-size: 1em; /* 减小标题文字大小 */
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* 调优化依据卡片的内容布局 */
+        .plan-card:nth-child(2) .plan-content {
+            padding: 15px;
+        }
+
+        .plan-card:nth-child(2) .plan-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .plan-card:nth-child(2) .plan-list li {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .plan-card:nth-child(2) .analysis-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .plan-card:nth-child(2) .analysis-item span {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .plan-card:nth-child(2) .analysis-data {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 0;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #3498db;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .unit {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .trend {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .trend.positive {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .trend.negative {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .plan-card:nth-child(2) .analysis-data .value-unit {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .plan-card:nth-child(2) .parameter-details {
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .plan-card:nth-child(2) .parameter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(52, 152, 219, 0.1);
+        }
+
+        .plan-card:nth-child(2) .parameter-item:last-child {
+            border-bottom: none;
+        }
+
+        .plan-card:nth-child(2) .param-name {
+            color: #34495e;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .plan-card:nth-child(2) .param-value {
+            color: #2c3e50;
+            font-size: 0.9em;
+            text-align: right;
+        }
+
+        .plan-card:nth-child(2) .param-unit {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            margin-left: 4px;
+        }
+
+        /* 调整滚动��样式 */
+        .plan-card:nth-child(2) .plan-content {
+            max-height: calc(100% - 40px);
+            overflow-y: auto;
+        }
+
+        .plan-card:nth-child(2) .plan-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .plan-card:nth-child(2) .plan-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 2px;
+        }
+
+        .plan-card:nth-child(2) .plan-content::-webkit-scrollbar-thumb {
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 2px;
+        }
+
+        .plan-card:nth-child(2) .plan-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(52, 152, 219, 0.3);
+        }
+
+        /* 确保卡片高度一致 */
+        .plan-grid {
+            grid-template-rows: repeat(2, minmax(350px, auto));
+        }
+
+        .plan-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plan-content {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 在 energy-management-container 的最后添加优化结果对比模块 */
+        .optimization-comparison {
+            background: linear-gradient(135deg, rgba(236, 240, 245, 0.8), rgba(230, 238, 246, 0.9));
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 25px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* 修改 comparison-grid 的样式 */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 350px); /* 设置固定高度为350px */
+            gap: 25px;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        /* 修改 comparison-card 的样式 */
+        .comparison-card {
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0.2) 100%
+            );
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.1),
+                0 8px 25px rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .comparison-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            border-radius: 15px;
+            z-index: -1;
+        }
+
+        .comparison-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.15) 100%
+            );
+            z-index: -1;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 15px 35px rgba(52, 152, 219, 0.2),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.5) 0%,
+                rgba(255, 255, 255, 0.3) 100%
+            );
+        }
+
+        /* 修改 comparison-header 的样式 */
+        .comparison-header {
+            padding: 0 20px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.85));
+            color: white;
+            flex-shrink: 0;
+            height: 25px; /* 固定高度为25px */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 修改 header 中的图标和字大小 */
+        .comparison-header i {
+            font-size: 0.9em;
+            margin-right: 8px;
+        }
+
+        .comparison-header h4 {
+            font-size: 0.9em;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* 统一所有卡片的 header 颜色为蓝色渐变 */
+        .comparison-card:nth-child(1) .comparison-header,
+        .comparison-card:nth-child(2) .comparison-header,
+        .comparison-card:nth-child(3) .comparison-header,
+        .comparison-card:nth-child(4) .comparison-header {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.85));
+        }
+
+        /* 调整内容区域的高度 */
+        .comparison-content {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            height: calc(350px - 25px);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* 修改 comparison-item 的样式 */
+        .comparison-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        /* 标题保持左对齐 */
+        .comparison-item .item-label {
+            text-align: left;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        /* 修改 comparison-values 的样式，使其居中显示 */
+        .comparison-values {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* 添加居中对齐 */
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        /* 修改 result-value 的样式 */
+        .comparison-values .result-value {
+            display: flex;
+            align-items: baseline;
+            justify-content: center; /* 添加居中对齐 */
+            gap: 4px;
+        }
+
+        /* 修改趋势指标的样式 */
+        .comparison-values .trend-indicators {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* 添加居中对齐 */
+        }
+
+        .comparison-values .trend-value {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* 添加居中对齐 */
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 调整数值和单位的样式 */
+        .comparison-values .value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .comparison-values .unit {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        /* 删除趋势描述 */
+        .comparison-values .trend-description {
+            display: none;
+        }
+
+        /* 调整正负趋势的颜色 */
+        .comparison-values .trend-value.positive {
+            color: #27ae60;
+        }
+
+        .comparison-values .trend-value.negative {
+            color: #e74c3c;
+        }
+
+        /* 自定义滚动条样式 */
+        .comparison-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .comparison-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .comparison-content::-webkit-scrollbar-thumb {
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 3px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(52, 152, 219, 0.5);
+        }
+
+        /* 为不同卡片设置不同的渐变色 */
+        .comparison-card:nth-child(1) .comparison-header {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.85));
+        }
+
+        .comparison-card:nth-child(2) .comparison-header {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.95), rgba(39, 174, 96, 0.85));
+        }
+
+        .comparison-card:nth-child(3) .comparison-header {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.95), rgba(142, 68, 173, 0.85));
+        }
+
+        .comparison-card:nth-child(4) .comparison-header {
+            background: linear-gradient(135deg, rgba(230, 126, 34, 0.95), rgba(211, 84, 0, 0.85));
+        }
+
+        /* 焦点凸显效果 */
+        .comparison-card:focus-within {
+            outline: none;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.5) 0%,
+                rgba(255, 255, 255, 0.3) 100%
+            );
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 
+                0 8px 32px rgba(52, 152, 219, 0.2),
+                0 4px 8px rgba(255, 255, 255, 0.1),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            transform: translateY(-5px) scale(1.02);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* 添加玻璃态焦点效果 */
+        .comparison-card:focus-within::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(
+                45deg,
+                rgba(52, 152, 219, 0.5),
+                rgba(255, 255, 255, 0.5),
+                rgba(52, 152, 219, 0.5)
+            );
+            border-radius: 15px;
+            z-index: -1;
+            animation: borderGlow 3s linear infinite;
+            filter: blur(5px);
+        }
+
+        /* 添加发光边框果 */
+        .comparison-card:focus-within::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(
+                45deg,
+                rgba(52, 152, 219, 0.5),
+                rgba(255, 255, 255, 0.5),
+                rgba(52, 152, 219, 0.5)
+            );
+            border-radius: 15px;
+            z-index: -1;
+            animation: borderGlow 3s linear infinite;
+            filter: blur(5px);
+        }
+
+        /* 添加内容区域的玻璃效果 */
+        .comparison-card:focus-within .comparison-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* 添加边框发光动画 */
+        @keyframes borderGlow {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* 优��卡片内容的悬停效果 */
+        .comparison-card .comparison-item {
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .comparison-card:focus-within .comparison-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(8px);
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.1),
+                0 2px 4px rgba(52, 152, 219, 0.15);
+        }
+
+        /* 优化卡片头部样式 */
+        .comparison-card:focus-within .comparison-header {
+            background: linear-gradient(
+                135deg,
+                rgba(52, 152, 219, 0.95),
+                rgba(41, 128, 185, 0.85)
+            );
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 在style标签内添加以下样式 */
+        .optimization-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .optimization-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            background: linear-gradient(135deg, #2980b9, #2573a7);
+        }
+
+        .optimization-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+        }
+
+        .optimization-btn i {
+            font-size: 16px;
+        }
+
+        .optimization-btn.disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 修改优化条件卡片的样式 */
+        .result-card[data-card="strategy"] {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .result-card[data-card="strategy"] .result-icon {
+            margin: 20px 0 10px 0;
+        }
+
+        .result-card[data-card="strategy"] .result-content {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-card[data-card="strategy"] .result-value {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-card[data-card="strategy"] .strategy-type {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .result-card[data-card="strategy"] .strategy-type i {
+            font-size: 0.9em;
+        }
+
+        /* 为不同模式设置不同的颜色 */
+        .result-card[data-card="strategy"] .strategy-type.eco {
+            color: #27ae60;
+        }
+
+        .result-card[data-card="strategy"] .strategy-type.balance {
+            color: #3498db;
+        }
+
+        .result-card[data-card="strategy"] .strategy-type.performance {
+            color: #e67e22;
+        }
+
+        /* 隐藏原有的标题 */
+        .result-card[data-card="strategy"] h4 {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 添加页眉 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 优化按钮组 -->
+        <div class="optimization-selection">
+            <div class="optimization-cards">
+                <div class="optimization-card">
+                    <div class="card-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶航速优化</h3>
+                        <p>基于航行数据优化船舶航速，提升能效表现</p>
+                    </div>
+                </div>
+
+                <div class="optimization-card">
+                    <div class="card-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶航线优化</h3>
+                        <p>智能规划最优航线，降低燃料消耗</p>
+                    </div>
+                </div>
+
+                <div class="optimization-card">
+                    <div class="card-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>船舶纵倾优化</h3>
+                        <p>优化船舶纵倾状态，提升航行效率</p>
+                    </div>
+                </div>
+
+                <div class="optimization-card active">
+                    <div class="card-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>能量管理优化</h3>
+                        <p>优化能量分配策略，实现节能减排</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加能量管理优的主要��容区域 -->
+        <div class="energy-management-container">
+            <div class="input-section">
+                <div class="section-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>船舶基本信息</h3>
+                </div>
+                <div class="input-form">
+                    <div class="form-group">
+                        <label for="strategy">优化条件</label>
+                        <select id="strategy" class="form-control">
+                            <option value="">请选择优化条件</option>
+                            <option value="eco">节能模式</option>
+                            <option value="balance">平衡模式</option>
+                            <option value="performance">性能模式</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="arrivalTime">计划到达时间</label>
+                        <input type="datetime-local" id="arrivalTime" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="destinationPort">抵达港口</label>
+                        <select id="destinationPort" class="form-control">
+                            <option value="">请选择抵达港口</option>
+                            <option value="port1">上海港</option>
+                            <option value="port2">宁波港</option>
+                            <option value="port3">青岛港</option>
+                            <option value="port4">天津港</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currentLoad">当前载重量(吨)</label>
+                        <input type="number" id="currentLoad" class="form-control" placeholder="请输入当前载重量">
+                    </div>
+                    
+                    <!-- 添加右上角的优化按钮 -->
+                    <div style="position: absolute; top: 10px; right: 20px;">
+                        <button type="button" class="optimization-btn" onclick="startOptimization()">
+                            <i class="fas fa-play"></i>
+                            开始优化
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="optimization-results" style="display: none;">
+                <div class="section-header">
+                    <i class="fas fa-chart-pie"></i>
+                    <h3>优化结果概览</h3>
+                </div>
+                <div class="results-grid">
+                    <!-- 添加优化条件卡片 -->
+                    <div class="result-card" data-card="strategy">
+                        <div class="result-icon">
+                            <i class="fas fa-sliders-h"></i>
+                        </div>
+                        <div class="result-content">
+                            <div class="result-value">
+                                <div class="strategy-type">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>请选择优化策略</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 现有的燃消耗卡片 -->
+                    <div class="result-card" data-card="fuel">
+                        <div class="result-icon">
+                            <i class="fas fa-gas-pump"></i>
+                        </div>
+                        <div class="result-content">
+                            <h4>燃料消耗</h4>
+                            <div class="result-value">
+                                <span class="number">12.3</span>
+                                <span class="unit">t/h</span>
+                                <div class="trend positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>15%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 现有的能量效率卡片 -->
+                    <div class="result-card" data-card="energy">
+                        <div class="result-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="result-content">
+                            <h4>能量效率</h4>
+                            <div class="result-value">
+                                <span class="number">92.5</span>
+                                <span class="unit">%</span>
+                                <div class="trend positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>8.5%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 现有的成本消耗卡片 -->
+                    <div class="result-card" data-card="cost">
+                        <div class="result-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="result-content">
+                            <h4>成本消耗</h4>
+                            <div class="result-value">
+                                <div class="value-container">
+                                    <span class="number">25.6</span>
+                                    <span class="unit">万元/天</span>
+                                </div>
+                                <div class="trend positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>12.3%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="optimization-plan" style="display: none;">
+                <div class="section-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>优化方案说明</h3>
+                </div>
+                <div class="plan-grid">
+                    <!-- 1. 优化目标卡片 -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <i class="fas fa-bullseye"></i>
+                            <h4>优化目标</h4>
+                        </div>
+                        <div class="plan-content">
+                            <ul class="plan-list">
+                                <li>
+                                    <i class="fas fa-gas-pump"></i>
+                                    降低燃料消耗，提高氢燃料利用效率，实现清洁能源高效利用
+                                </li>
+                                <li>
+                                    <i class="fas fa-bolt"></i>
+                                    提升船舶整体能效，优化动力系统协同工作，降低能量消耗
+                                </li>
+                                <li>
+                                    <i class="fas fa-coins"></i>
+                                    改善船舶经济性，降低运营成本，延长设备使用寿命
+                                </li>
+                                <li>
+                                    <i class="fas fa-leaf"></i>
+                                    实现节能减排目标，提升船舶绿色环保性能
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 2. 优化依据卡片 -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <i class="fas fa-chart-line"></i>
+                            <h4>优化依据</h4>
+                        </div>
+                        <div class="plan-content">
+                            <ul class="plan-list">
+                                <!-- 船动力系统状�� -->
+                                <li>
+                                    <i class="fas fa-bolt"></i>
+                                    <div class="analysis-item">
+                                        <span>动力系统状态</span>
+                                        <div class="analysis-data">
+                                            <div class="value-unit">
+                                                <span class="value">2500</span>
+                                                <span class="unit">kW</span>
+                                            </div>
+                                            <div class="trend positive">
+                                                <i class="fas fa-check"></i>
+                                                <span>运行正常</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">总输出功率</span>
+                                            <div class="param-value">
+                                                <span>2500</span>
+                                                <span class="param-unit">kW</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">系统效率</span>
+                                            <div class="param-value">
+                                                <span>92</span>
+                                                <span class="param-unit">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <!-- 船舶阻力分析 -->
+                                <li>
+                                    <i class="fas fa-ship"></i>
+                                    <div class="analysis-item">
+                                        <span>船舶阻力</span>
+                                        <div class="analysis-data">
+                                            <div class="value-unit">
+                                                <span class="value">180</span>
+                                                <span class="unit">kN</span>
+                                            </div>
+                                            <div class="trend positive">
+                                                <i class="fas fa-arrow-down"></i>
+                                                <span>低于预期</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">摩擦阻力</span>
+                                            <div class="param-value">
+                                                <span>120</span>
+                                                <span class="param-unit">kN</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">波浪阻力</span>
+                                            <div class="param-value">
+                                                <span>45</span>
+                                                <span class="param-unit">kN</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">空气阻力</span>
+                                            <div class="param-value">
+                                                <span>15</span>
+                                                <span class="param-unit">kN</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <!-- 燃料电池与蓄电池状态 -->
+                                <li>
+                                    <i class="fas fa-battery-three-quarters"></i>
+                                    <div class="analysis-item">
+                                        <span>能源系统状态</span>
+                                        <div class="analysis-data">
+                                            <div class="value-unit">
+                                                <span class="value">2800</span>
+                                                <span class="unit">kW</span>
+                                            </div>
+                                            <div class="trend positive">
+                                                <i class="fas fa-check"></i>
+                                                <span>功率匹配</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">燃料电池功率</span>
+                                            <div class="param-value">
+                                                <span>2000</span>
+                                                <span class="param-unit">kW</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">蓄电池功率</span>
+                                            <div class="param-value">
+                                                <span>800</span>
+                                                <span class="param-unit">kW</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">蓄电池SOC</span>
+                                            <div class="param-value">
+                                                <span>75</span>
+                                                <span class="param-unit">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <!-- 热管理系统状态 -->
+                                <li>
+                                    <i class="fas fa-temperature-high"></i>
+                                    <div class="analysis-item">
+                                        <span>热管理系统</span>
+                                        <div class="analysis-data">
+                                            <div class="value-unit">
+                                                <span class="value">65</span>
+                                                <span class="unit">°C</span>
+                                            </div>
+                                            <div class="trend positive">
+                                                <i class="fas fa-check"></i>
+                                                <span>温度正常</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">燃料电池温度</span>
+                                            <div class="param-value">
+                                                <span>65</span>
+                                                <span class="param-unit">°C</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">蓄电池温度</span>
+                                            <div class="param-value">
+                                                <span>35</span>
+                                                <span class="param-unit">°C</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">冷却功率</span>
+                                            <div class="param-value">
+                                                <span>120</span>
+                                                <span class="param-unit">kW</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 3. 优化措施卡片 -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <i class="fas fa-lightbulb"></i>
+                            <h4>优化措施</h4>
+                        </div>
+                        <div class="plan-content">
+                            <ul class="plan-list">
+                                <li>
+                                    <i class="fas fa-sync"></i>
+                                    <div class="analysis-item">
+                                        <span>动态调整燃料电池输出功率</span>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">启动阶段</span>
+                                            <div class="param-value">
+                                                <span>低功率启动，逐步提升至最佳工��点</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">巡航阶段</span>
+                                            <div class="param-value">
+                                                <span>维持在65-75%额定功率范围</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">负载变化</span>
+                                            <div class="param-value">
+                                                <span>根据阻力变化平滑调节输出</span>
+                                            </div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-battery-half"></i>
+                                    <div class="analysis-item">
+                                        <span>优化蓄电池充放电策略</span>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">充电时机</span>
+                                            <div class="param-value">
+                                                <span>燃料电池负载低时进行补充</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">放电控制</span>
+                                            <div class="param-value">
+                                                <span>峰值功率需求时辅助供电</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">SOC管理</span>
+                                            <div class="param-value">
+                                                <span>维持在30-80%最佳区间</span>
+                                            </div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-cog"></i>
+                                    <div class="analysis-item">
+                                        <span>实时监控驱动电机效率</span>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">转速控制</span>
+                                            <div class="param-value">
+                                                <span>保持在高效率转速区间</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">温度管理</span>
+                                            <div class="param-value">
+                                                <span>维持65-75℃最佳工作温度</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">负载分配</span>
+                                            <div class="param-value">
+                                                <span>避免低负载低效率运行</span>
+                                            </div>
+                                        </div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-balance-scale"></i>
+                                    <div class="analysis-item">
+                                        <span>平衡推进系统负载分配</span>
+                                    </div>
+                                    <div class="parameter-details">
+                                        <div class="parameter-item">
+                                            <span class="param-name">率分配</span>
+                                            <div class="param-value">
+                                                <span>燃料电池70%，蓄电池30%</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">动态调节</span>
+                                            <div class="param-value">
+                                                <span>根据航行工况实时优化</span>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="param-name">能量回收</span>
+                                            <div class="param-value">
+                                                <span>制动能量回收存储利用</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 4. 优化预期卡片 -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <i class="fas fa-chart-pie"></i>
+                            <h4>优化预期</h4>
+                        </div>
+                        <div class="plan-content">
+                            <ul class="plan-list">
+                                <li>
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    燃料电池系统效率提升至92%，较基准提升8%
+                                </li>
+                                <li>
+                                    <i class="fas fa-ship"></i>
+                                    船舶总阻力降低10%，能耗下降15%
+                                </li>
+                                <li>
+                                    <i class="fas fa-battery-three-quarters"></i>
+                                    动力系统损耗降低12%，蓄电池寿命延长20%
+                                </li>
+                                <li>
+                                    <i class="fas fa-dollar-sign"></i>
+                                    综合运营成本降低15-18%
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 在 energy-management-container 的最后添加优化结果对比模块 -->
+        <div class="optimization-comparison" style="display: none;">
+            <div class="section-header">
+                <i class="fas fa-chart-bar"></i>
+                <h3>优化结果对比</h3>
+            </div>
+            <div class="comparison-grid">
+                <!-- 船舶动力对比 -->
+                <div class="comparison-card">
+                    <div class="comparison-header">
+                        <i class="fas fa-bolt"></i>
+                        <h4>动力系统性能</h4>
+                    </div>
+                    <div class="comparison-content">
+                        <div class="comparison-item">
+                            <div class="item-label">系统输出功率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">2500</span>
+                                    <span class="unit">kW</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+13.6%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">动力系统效率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">92</span>
+                                    <span class="unit">%</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+8.2%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">功率密度</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">3.8</span>
+                                    <span class="unit">kW/L</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+15.2%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">动态响应时间</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">0.8</span>
+                                    <span class="unit">s</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-25.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 燃料利用情况 -->
+                <div class="comparison-card">
+                    <div class="comparison-header">
+                        <i class="fas fa-gas-pump"></i>
+                        <h4>燃料利用效率</h4>
+                    </div>
+                    <div class="comparison-content">
+                        <div class="comparison-item">
+                            <div class="item-label">氢燃料消耗率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">12.3</span>
+                                    <span class="unit">kg/h</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-15.2%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">燃料电池效率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">90</span>
+                                    <span class="unit">%</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+9.8%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">氢气利用率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">95.5</span>
+                                    <span class="unit">%</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+7.2%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">单位能耗</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">2.8</span>
+                                    <span class="unit">kg/kWh</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-12.5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统运行状态 -->
+                <div class="comparison-card">
+                    <div class="comparison-header">
+                        <i class="fas fa-cogs"></i>
+                        <h4>系统运行状态</h4>
+                    </div>
+                    <div class="comparison-content">
+                        <div class="comparison-item">
+                            <div class="item-label">系统稳定性指数</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">95</span>
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+11.8%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">系统故障率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">0.5</span>
+                                    <span class="unit">%</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-35.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">维护周期</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">180</span>
+                                    <span class="unit">天</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+20.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">系统寿命预期</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">8.5</span>
+                                    <span class="unit">年</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+15.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 经济效益分析 -->
+                <div class="comparison-card">
+                    <div class="comparison-header">
+                        <i class="fas fa-coins"></i>
+                        <h4>经济效益分析</h4>
+                    </div>
+                    <div class="comparison-content">
+                        <div class="comparison-item">
+                            <div class="item-label">运营成本</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">25.6</span>
+                                    <span class="unit">万元/天</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-18.5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">维护成本</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">85</span>
+                                    <span class="unit">万元/年</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>-22.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="item-label">投资回报率</div>
+                            <div class="comparison-values">
+                                <div class="result-value">
+                                    <span class="value">32.5</span>
+                                    <span class="unit">%</span>
+                                </div>
+                                <div class="trend-indicators">
+                                    <div class="trend-value positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>+25.0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+    <script>
+        // 侧边栏菜单控制
+        function toggleMenuItem(menuId) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const targetMenuItem = document.getElementById(menuId).closest('.menu-item');
+            
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const subMenu = item.querySelector('ul');
+                    if (subMenu) {
+                        subMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            targetMenuItem.classList.add('active');
+            const subMenu = targetMenuItem.querySelector('ul');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+
+        // 初始化事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化��边栏��单项的点击事件
+            document.querySelectorAll('.menu-item').forEach(item => {
+                const h2 = item.querySelector('h2');
+                if (h2) {
+                    h2.addEventListener('click', () => {
+                        const menuId = item.id;
+                        toggleMenuItem(menuId);
+                    });
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有需要的元素
+            const strategySelect = document.getElementById('strategy');
+            const strategyNameDisplay = document.querySelector('.strategy-name');
+            const strategyDetailDisplay = document.getElementById('strategyDetail');
+            
+            // 获取需要更新数据的元素
+            const fuelConsumption = document.querySelector('[data-card="fuel"] .number');
+            const fuelUnit = document.querySelector('[data-card="fuel"] .unit');
+            const fuelTrend = document.querySelector('[data-card="fuel"] .trend span');
+            
+            const energyEfficiency = document.querySelector('[data-card="energy"] .number');
+            const energyTrend = document.querySelector('[data-card="energy"] .trend span');
+            
+            const costConsumption = document.querySelector('[data-card="cost"] .number');
+            const costTrend = document.querySelector('[data-card="cost"] .trend span');
+
+            // 定义不同策略对应的数据
+            const strategyData = {
+                'eco': {
+                    type: '节能模式',
+                    icon: 'fa-leaf',
+                    class: 'eco',
+                    description: '最小化能源消耗',
+                    fuel: {
+                        value: 10.2,
+                        unit: 't/h',
+                        trend: '较基准降低25%'
+                    },
+                    energy: {
+                        value: 95.8,
+                        trend: '较基准提升12.5%'
+                    },
+                    cost: {
+                        value: 22.3,
+                        trend: '较基准降低18.6%'
+                    }
+                },
+                'balance': {
+                    type: '平衡模式',
+                    icon: 'fa-balance-scale',
+                    class: 'balance',
+                    description: '能耗与性能平衡',
+                    fuel: {
+                        value: 12.3,
+                        unit: 't/h',
+                        trend: '较基准降低15%'
+                    },
+                    energy: {
+                        value: 92.5,
+                        trend: '较基准提升8.5%'
+                    },
+                    cost: {
+                        value: 25.6,
+                        trend: '较基准降低12.3%'
+                    }
+                },
+                'performance': {
+                    type: '性能模式',
+                    icon: 'fa-tachometer-alt',
+                    class: 'performance',
+                    description: '最大化运行性能',
+                    fuel: {
+                        value: 14.8,
+                        unit: 't/h',
+                        trend: '较基准降低5%'
+                    },
+                    energy: {
+                        value: 88.6,
+                        trend: '较基准提升4.2%'
+                    },
+                    cost: {
+                        value: 28.9,
+                        trend: '较基准降低6.8%'
+                    }
+                },
+                '': {
+                    type: '未选择',
+                    icon: 'fa-info-circle',
+                    class: '',
+                    description: '请选择优化策略',
+                    fuel: {
+                        value: '--',
+                        unit: 't/h',
+                        trend: '等待选择策略'
+                    },
+                    energy: {
+                        value: '--',
+                        trend: '等待选择策略'
+                    },
+                    cost: {
+                        value: '--',
+                        trend: '等待选择策略'
+                    }
+                }
+            };
+
+            // 修改策略选择变化的处理函数
+            strategySelect.addEventListener('change', function() {
+                const selectedStrategy = this.value;
+                const data = strategyData[selectedStrategy] || strategyData[''];
+                
+                // 更新策略显示
+                const strategyType = document.querySelector('.strategy-type');
+                strategyType.className = `strategy-type ${data.class}`;
+                strategyType.innerHTML = `
+                    <i class="fas ${data.icon}"></i>
+                    <span>${data.type}</span>
+                `;
+                
+                // 更新燃料消耗数据
+                fuelConsumption.textContent = data.fuel.value;
+                fuelUnit.textContent = data.fuel.unit;
+                fuelTrend.textContent = data.fuel.trend;
+                
+                // 更新能量效率数据
+                energyEfficiency.textContent = data.energy.value;
+                energyTrend.textContent = data.energy.trend;
+                
+                // 更新成本消耗数据
+                costConsumption.textContent = data.cost.value;
+                costTrend.textContent = data.cost.trend;
+                
+                // 更新样式
+                if(selectedStrategy) {
+                    strategyDetailDisplay.classList.add('positive');
+                } else {
+                    strategyDetailDisplay.classList.remove('positive');
+                }
+            });
+        });
+
+        // 在现有的 DOMContentLoaded 事件监听器��添加
+        document.addEventListener('DOMContentLoaded', function() {
+            // 已有的代码...
+            
+            // 为当前页面对应的按钮添加选中状态
+            const energyButton = document.querySelector('.opt-button[data-type="energy"]');
+            if (energyButton) {
+                energyButton.classList.add('selected');
+            }
+        });
+
+        // 在现有的 script 标签中添加以下代码
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为优化卡片添加点击事件
+            const optimizationCards = document.querySelectorAll('.optimization-card');
+            optimizationCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // 获取点击的卡片内容标题
+                    const cardTitle = this.querySelector('h3').textContent;
+                    
+                    // 根据标题跳转到对应页面
+                    switch(cardTitle) {
+                        case '船舶航速优化':
+                            window.location.href = '船舶航速优化.html';
+                            break;
+                        case '船舶航线优化':
+                            window.location.href = '船舶航线优化.html';
+                            break;
+                        case '船舶纵倾优化':
+                            window.location.href = '船舶纵倾优化.html';
+                            break;
+                        case '能量管理优化':
+                            window.location.href = '能量管理优化.html';
+                            break;
+                    }
+                });
+            });
+
+            // 移除当前页面卡片的点击事件
+            const currentCard = document.querySelector('.optimization-card.active');
+            if (currentCard) {
+                currentCard.style.pointerEvents = 'none'; // 禁用当前页面卡片的点击
+            }
+        });
+
+        // 添加按钮功能的JavaScript代码
+        function startOptimization() {
+            // 验证输入数据
+            if (!validateInputs()) {
+                alert('请填写完整的基本信息');
+                return;
+            }
+            
+            // 开始优化流程
+            try {
+                // 这里添加优化逻辑
+                console.log('开始优化计算...');
+                // TODO: 调用优化算��
+                
+            } catch (error) {
+                console.error('优化过程出错:', error);
+                alert('优化过程发生错误，请检查输入数据');
+            }
+        }
+
+        function validateInputs() {
+            // 验证必���字段
+            // 根据具体需求添加验证逻辑
+            return true;
+        }
+
+        // 在现有的 script 标签中添加以下代码
+        
+        // 定义需要控制显示的模块
+        const resultModules = {
+            results: document.querySelector('.optimization-results'),
+            plan: document.querySelector('.optimization-plan'),
+            comparison: document.querySelector('.optimization-comparison')
+        };
+
+        // 初始化时隐藏结果���块
+        function hideResultModules() {
+            Object.values(resultModules).forEach(module => {
+                module.style.display = 'none';
+            });
+        }
+
+        // 显示结果模块
+        function showResultModules() {
+            // 使用动画效果依次显示各个模块
+            setTimeout(() => {
+                resultModules.results.style.display = 'block';
+                resultModules.results.style.opacity = '0';
+                setTimeout(() => {
+                    resultModules.results.style.transition = 'opacity 0.5s ease-in-out';
+                    resultModules.results.style.opacity = '1';
+                }, 100);
+            }, 0);
+
+            setTimeout(() => {
+                resultModules.plan.style.display = 'block';
+                resultModules.plan.style.opacity = '0';
+                setTimeout(() => {
+                    resultModules.plan.style.transition = 'opacity 0.5s ease-in-out';
+                    resultModules.plan.style.opacity = '1';
+                }, 100);
+            }, 500);
+
+            setTimeout(() => {
+                resultModules.comparison.style.display = 'block';
+                resultModules.comparison.style.opacity = '0';
+                setTimeout(() => {
+                    resultModules.comparison.style.transition = 'opacity 0.5s ease-in-out';
+                    resultModules.comparison.style.opacity = '1';
+                }, 100);
+            }, 1000);
+        }
+
+        // 修改验证和优化函数
+        function validateInputs() {
+            const strategy = document.getElementById('strategy').value;
+            const arrivalTime = document.getElementById('arrivalTime').value;
+            const destinationPort = document.getElementById('destinationPort').value;
+            const currentLoad = document.getElementById('currentLoad').value;
+
+            if (!strategy || !arrivalTime || !destinationPort || !currentLoad) {
+                return false;
+            }
+            return true;
+        }
+
+        function startOptimization() {
+            if (!validateInputs()) {
+                alert('请填写完整的基本信息');
+                return;
+            }
+
+            // 显示加载动画
+            const optimizationBtn = document.querySelector('.optimization-btn');
+            optimizationBtn.disabled = true;
+            optimizationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 优化中...';
+
+            // 模拟优化计算过程
+            setTimeout(() => {
+                try {
+                    // 显示结果模块
+                    showResultModules();
+                    
+                    // 恢复按钮状态
+                    optimizationBtn.disabled = false;
+                    optimizationBtn.innerHTML = '<i class="fas fa-play"></i> 开始优化';
+                    
+                    // 平滑滚动到结果区域
+                    resultModules.results.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                } catch (error) {
+                    console.error('优化过程出错:', error);
+                    alert('优化过程发生错误，请检查输入数据');
+                    
+                    // 恢复按钮状态
+                    optimizationBtn.disabled = false;
+                    optimizationBtn.innerHTML = '<i class="fas fa-play"></i> 开始优化';
+                }
+            }, 2000); // 模拟2秒的计算时间
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            hideResultModules();
+            
+            // 其他现有的初始化代码...
+        });
+    </script>
+</body>
+</html>

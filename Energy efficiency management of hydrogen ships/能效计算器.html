@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能效计算器</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 从船舶信息管理.html复制的基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 复制侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 复制侧边栏菜单项样式 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 添加缺少的侧边栏菜单项图标样式 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        /* 添加子菜单项样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 添加悬停效果 */
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 修改页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: -20px -20px 15px -20px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 修改nav-item样式，确保图标样式保持不变 */
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        /* 修改主内容区域的padding */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background: linear-gradient(to bottom, #ffffff, #f8fafd);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            min-width: 0;
+        }
+
+        /* 修改导航列表样式 */
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px 0; /* 修改margin，去掉左右margin */
+            padding: 10px;
+            gap: 20px;
+        }
+
+        /* 添加菜单收起相关的样式 */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 活动状态样式 */
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 修改导航栏相关样式 */
+        .header-content {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;  /* 确保内容右对齐 */
+        }
+
+        /* 修改导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: flex-end;  /* 确保导航栏右对齐 */
+            width: auto;  /* 修改为auto适应内容宽度 */
+        }
+
+        /* 修改导航列表样式 */
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px 0;
+            padding: 10px 0;  /* 移除水平方向的padding */
+            gap: 20px;
+            justify-content: flex-end;  /* 确保列表项右对齐 */
+        }
+
+        /* 确保导航项样式不变 */
+        .nav-item {
+            margin: 0;  /* 移除可能的外边距 */
+        }
+
+        /* 搜索区域样式 */
+        .search-area {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .search-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .search-group-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .search-group-title i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+
+        .search-fields {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            color: #4a5568;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-group input,
+        .input-group select {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            outline: none;
+        }
+
+        .input-group input:hover,
+        .input-group select:hover {
+            border-color: #3498db;
+        }
+
+        .input-group input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .input-group input[type="number"]::-webkit-outer-spin-button,
+        .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* 评估选择模块样式 */
+        .evaluation-options {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .options-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .options-group-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .options-group-title i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+
+        .options-fields {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 复选框组样式 */
+        .checkbox-group {
+            position: relative;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-group:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            padding-left: 35px;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover input ~ .checkmark {
+            border-color: #3498db;
+        }
+
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .label-text {
+            display: flex;
+            flex-direction: column;
+            margin-left: 15px;
+        }
+
+        .label-text span {
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .label-text small {
+            color: #718096;
+            font-size: 12px;
+        }
+
+        /* 评估结果模块样式 */
+        .evaluation-results {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .results-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .results-group-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .results-group-title i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+
+        .results-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-header i {
+            margin-right: 10px;
+            color: #3498db;
+            font-size: 20px;
+        }
+
+        .result-header h3 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .result-body {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item .label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .result-item .value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .result-chart {
+            height: 200px;
+            margin-top: 10px;
+        }
+
+        /* 评估等级样式 */
+        .grade-s { color: #9c59b6 !important; }
+        .grade-a { color: #2ecc71 !important; }
+        .grade-b { color: #3498db !important; }
+        .grade-c { color: #f1c40f !important; }
+        .grade-d { color: #e74c3c !important; }
+
+        /* 参数输入按钮样式 */
+        .input-params-btn {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .input-params-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        /* 模态框样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-container {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #2d3748;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .param-group {
+            margin-bottom: 15px;
+        }
+
+        .param-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .param-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-footer button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cancel-btn {
+            background: #e2e8f0;
+            border: none;
+            color: #4a5568;
+        }
+
+        .confirm-btn {
+            background: #3498db;
+            border: none;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background: #cbd5e0;
+        }
+
+        .confirm-btn:hover {
+            background: #2980b9;
+        }
+
+        /* 修改复选框组样式 */
+        .checkbox-group {
+            position: relative;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 移除原有的按钮样式 */
+        .input-params-btn {
+            display: none;
+        }
+
+        /* 添加图标样式 */
+        .input-params-icon {
+            color: #3498db;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .input-params-icon:hover {
+            opacity: 1;
+            transform: rotate(45deg);
+        }
+
+        /* 调整checkbox-container样式 */
+        .checkbox-container {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        /* 参数分组样式 */
+        .param-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .param-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .param-section h4 {
+            color: #2d3748;
+            font-size: 15px;
+            margin: 0 0 15px 0;
+            padding-left: 8px;
+            border-left: 3px solid #3498db;
+        }
+
+        /* 参数组样式优化 */
+        .param-group {
+            margin-bottom: 15px;
+        }
+
+        .param-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .param-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .param-group input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            outline: none;
+        }
+
+        .param-group input:hover {
+            border-color: #3498db;
+        }
+
+        /* 等级显示容器样式 */
+        .grade-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 金字塔容器样式 */
+        .pyramid-container {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            margin-left: 10px;
+        }
+
+        /* 金字塔样式 */
+        .pyramid {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 金字塔层级样式 */
+        .pyramid-level {
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* 各层级颜色和宽度 */
+        .level-a {
+            width: 40%;
+            background-color: #2ecc71;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .level-b {
+            width: 55%;
+            background-color: #3498db;
+        }
+
+        .level-c {
+            width: 70%;
+            background-color: #f1c40f;
+        }
+
+        .level-d {
+            width: 85%;
+            background-color: #e67e22;
+        }
+
+        .level-e {
+            width: 100%;
+            background-color: #e74c3c;
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* 悬停效果 */
+        .pyramid-level:hover {
+            transform: translateX(5px);
+            filter: brightness(1.1);
+        }
+
+        /* 当前等级高亮效果 */
+        .pyramid-level.active {
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            transform: translateX(5px);
+        }
+
+        /* 修改金字塔样式以适应S级 */
+        .level-s {
+            width: 35%;  /* 比A级更窄 */
+            background-color: #9b59b6;  /* 紫色 */
+            border-radius: 4px 4px 0 0;
+        }
+
+        .level-a {
+            width: 45%;
+        }
+
+        /* 调整金字塔容器的大小 */
+        .pyramid-container {
+            width: 120px;  /* 增加宽度以适应更多层级 */
+            height: 120px;
+        }
+
+        /* 优化金字塔层级的间距 */
+        .pyramid-level {
+            margin-bottom: 2px;
+            height: 20px;  /* 固定高度 */
+            line-height: 20px;  /* 文字垂直居中 */
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 添加阴影效果 */
+        .pyramid-level {
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 激活状态的动画效果 */
+        .pyramid-level.active {
+            transform: translateX(8px);
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.2);
+        }
+
+        /* 修改结果卡片布局 */
+        .result-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .result-content {
+            display: flex;
+            gap: 20px;
+        }
+
+        /* 左侧结果样式 */
+        .result-left {
+            flex: 1;
+            border-right: 1px solid #e2e8f0;
+            padding-right: 20px;
+        }
+
+        /* 右侧建议样式 */
+        .result-right {
+            flex: 1;
+            padding-left: 20px;
+        }
+
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .suggestion-header i {
+            margin-right: 10px;
+            color: #f39c12;
+            font-size: 20px;
+        }
+
+        .suggestion-header h3 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .suggestion-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .suggestion-item {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .suggestion-item h4 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .suggestion-item ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .suggestion-item li {
+            color: #4a5568;
+            font-size: 13px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .suggestion-item li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 在style标签内修改/添加以下样式，位于其他样式定义之后 */
+        .results-content {
+            display: block;
+            width: 100%;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        /* 修改结果卡片样式 */
+        .result-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 修改结果内容布局 */
+        .result-content {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+        }
+
+        /* 修改左侧结果区域样式 */
+        .result-left {
+            flex: 1;
+            border-right: 1px solid #e2e8f0;
+            padding-right: 30px;
+            min-width: 0;
+        }
+
+        /* 修改右侧建议区域样式 */
+        .result-right {
+            flex: 1;
+            padding-left: 30px;
+            min-width: 0;
+        }
+
+        /* 修改结果组样式 */
+        .results-group {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 调整图表容器大小 */
+        .result-chart {
+            height: 250px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        /* 优化建议内容样式 */
+        .suggestion-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* 调整建议项样式 */
+        .suggestion-item {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算��.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录��.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 页眉 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 这里添加能效计算器的具体内容 -->
+        <div class="calculator-content">
+            <div class="search-area">
+                <div class="search-group">
+                    <div class="search-group-title">
+                        <i class="fas fa-search"></i>
+                        <span>能效评估基础信息</span>
+                    </div>
+                    <div class="search-fields">
+                        <div class="input-group">
+                            <label for="assessmentYear">评估年度</label>
+                            <select id="assessmentYear">
+                                <option value="">请选择年度</option>
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="shipName">船名</label>
+                            <input type="text" id="shipName" placeholder="请输入船名">
+                        </div>
+                        <div class="input-group">
+                            <label for="deadweight">载重吨</label>
+                            <input type="number" id="deadweight" placeholder="请输入载重吨">
+                        </div>
+                        <div class="input-group">
+                            <label for="distance">航行距离(海里)</label>
+                            <input type="number" id="distance" placeholder="请输入航行距离">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 添加评估选择模块 -->
+            <div class="evaluation-options">
+                <div class="options-group">
+                    <div class="options-group-title">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>评估指标选择</span>
+                    </div>
+                    <div class="options-fields">
+                        <div class="checkbox-group">
+                            <div class="checkbox-content">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="hydrogenIndex">
+                                    <span class="checkmark"></span>
+                                    <div class="label-text">
+                                        <span>船舶耗氢指数</span>
+                                        <small>评估船舶单位航程的氢气消耗量</small>
+                                    </div>
+                                </label>
+                                <i class="fas fa-cog input-params-icon" onclick="showModal('hydrogen')" title="输入参数"></i>
+                            </div>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-content">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="fuelCellDegradation">
+                                    <span class="checkmark"></span>
+                                    <div class="label-text">
+                                        <span>燃料电池退化率</span>
+                                        <small>评估船舶单次航程的燃料电池性能衰减情况</small>
+                                    </div>
+                                </label>
+                                <i class="fas fa-cog input-params-icon" onclick="showModal('fuelCell')" title="输入参数"></i>
+                            </div>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-content">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="energyEfficiency">
+                                    <span class="checkmark"></span>
+                                    <div class="label-text">
+                                        <span>能源利用效率</span>
+                                        <small>评估船舶单次航程的能源转换与利用效率</small>
+                                    </div>
+                                </label>
+                                <i class="fas fa-cog input-params-icon" onclick="showModal('energy')" title="输入参数"></i>
+                            </div>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-content">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="operationalEfficiency">
+                                    <span class="checkmark"></span>
+                                    <div class="label-text">
+                                        <span>运营能效指标</span>
+                                        <small>评估船舶单次航程的运营综合表现</small>
+                                    </div>
+                                </label>
+                                <i class="fas fa-cog input-params-icon" onclick="showModal('operational')" title="输入参数"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 在evaluation-options后添加评估结果模块 -->
+            <div class="evaluation-results">
+                <div class="results-group">
+                    <div class="results-group-title">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>船舶能效评估结果</span>
+                    </div>
+                    <div class="results-content">
+                        <!-- 耗氢指数结果 -->
+                        <div class="result-card" id="hydrogenIndexResult" style="display: none;">
+                            <div class="result-content">
+                                <!-- 左侧评估结果 -->
+                                <div class="result-left">
+                                    <div class="result-header">
+                                        <i class="fas fa-tint"></i>
+                                        <h3>船舶耗氢指数评估</h3>
+                                    </div>
+                                    <div class="result-body">
+                                        <div class="result-item">
+                                            <span class="label">单位航程耗氢量:</span>
+                                            <span class="value">0.85 kg/海里</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <span class="label">评估等级:</span>
+                                            <div class="grade-display">
+                                                <span class="value grade-a">A级</span>
+                                                <div class="pyramid-container">
+                                                    <div class="pyramid">
+                                                        <div class="pyramid-level level-a" title="A级">A</div>
+                                                        <div class="pyramid-level level-b" title="B级">B</div>
+                                                        <div class="pyramid-level level-c" title="C级">C</div>
+                                                        <div class="pyramid-level level-d" title="D级">D</div>
+                                                        <div class="pyramid-level level-e" title="E级">E</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="result-chart" id="hydrogenChart"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 右侧优化建议 -->
+                                <div class="result-right">
+                                    <div class="suggestion-header">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <h3>优化建议</h3>
+                                    </div>
+                                    <div class="suggestion-content">
+                                        <div class="suggestion-item">
+                                            <h4>氢能利用效率优化</h4>
+                                            <ul>
+                                                <li>优化燃料电池运行参数，提高氢气利用效率</li>
+                                                <li>调整系统运行工况，减少氢气损耗</li>
+                                                <li>加强氢气管路系统维护，降低泄漏风险</li>
+                                            </ul>
+                                        </div>
+                                        <div class="suggestion-item">
+                                            <h4>运行策略优化</h4>
+                                            <ul>
+                                                <li>优化航速规划，降低单位航程能耗</li>
+                                                <li>合理规划加氢时机，提高氢气利用率</li>
+                                                <li>优化动力系统负载分配策略</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 燃料电池退化率结果 -->
+                        <div class="result-card" id="fuelCellResult" style="display: none;">
+                            <div class="result-content">
+                                <!-- 左侧评估结果 -->
+                                <div class="result-left">
+                                    <div class="result-header">
+                                        <i class="fas fa-battery-three-quarters"></i>
+                                        <h3>燃料电池退化率评估</h3>
+                                    </div>
+                                    <div class="result-body">
+                                        <div class="result-item">
+                                            <span class="label">性能退化率:</span>
+                                            <span class="value">2.3%</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <span class="label">评估等级:</span>
+                                            <div class="grade-display">
+                                                <span class="value grade-b">B级</span>
+                                                <div class="pyramid-container">
+                                                    <div class="pyramid">
+                                                        <div class="pyramid-level level-a" title="A级">A</div>
+                                                        <div class="pyramid-level level-b active" title="B级">B</div>
+                                                        <div class="pyramid-level level-c" title="C级">C</div>
+                                                        <div class="pyramid-level level-d" title="D级">D</div>
+                                                        <div class="pyramid-level level-e" title="E级">E</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="result-chart" id="fuelCellChart"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 右侧优化建议 -->
+                                <div class="result-right">
+                                    <div class="suggestion-header">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <h3>优化建议</h3>
+                                    </div>
+                                    <div class="suggestion-content">
+                                        <div class="suggestion-item">
+                                            <h4>运行参数优化</h4>
+                                            <ul>
+                                                <li>控制燃料电池工作温度在最佳范围内</li>
+                                                <li>优化启停策略，减少不必要的启停次数</li>
+                                                <li>合理控制负载变化率，避免剧烈波动</li>
+                                            </ul>
+                                        </div>
+                                        <div class="suggestion-item">
+                                            <h4>维护保养建议</h4>
+                                            <ul>
+                                                <li>定期检查膜电极组件状态</li>
+                                                <li>及时更换老化部件</li>
+                                                <li>优化水管理系统运行参数</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 能源利用效率结果 -->
+                        <div class="result-card" id="energyEfficiencyResult" style="display: none;">
+                            <div class="result-content">
+                                <!-- 左侧评估结果 -->
+                                <div class="result-left">
+                                    <div class="result-header">
+                                        <i class="fas fa-bolt"></i>
+                                        <h3>能源利用效率评���</h3>
+                                    </div>
+                                    <div class="result-body">
+                                        <div class="result-item">
+                                            <span class="label">系统效率:</span>
+                                            <span class="value">78.5%</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <span class="label">评估等级:</span>
+                                            <div class="grade-display">
+                                                <span class="value grade-a">A级</span>
+                                                <div class="pyramid-container">
+                                                    <div class="pyramid">
+                                                        <div class="pyramid-level level-a active" title="A级">A</div>
+                                                        <div class="pyramid-level level-b" title="B级">B</div>
+                                                        <div class="pyramid-level level-c" title="C级">C</div>
+                                                        <div class="pyramid-level level-d" title="D级">D</div>
+                                                        <div class="pyramid-level level-e" title="E级">E</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="result-chart" id="energyChart"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 右侧优化建议 -->
+                                <div class="result-right">
+                                    <div class="suggestion-header">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <h3>优化建议</h3>
+                                    </div>
+                                    <div class="suggestion-content">
+                                        <div class="suggestion-item">
+                                            <h4>能源转换效率提升</h4>
+                                            <ul>
+                                                <li>优化能量转换设备工作点</li>
+                                                <li>减少能量传输损耗</li>
+                                                <li>提高能量回收系统效率</li>
+                                                <li>优化能量存储系统性能</li>
+                                            </ul>
+                                        </div>
+                                        <div class="suggestion-item">
+                                            <h4>系统集成优化</h4>
+                                            <ul>
+                                                <li>优化混合动力系统控制策略</li>
+                                                <li>改进能量管理算法</li>
+                                                <li>加强各子系统协调运行</li>
+                                                <li>提升系统响应速度</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 运营效能结果 -->
+                        <div class="result-card" id="operationalResult" style="display: none;">
+                            <div class="result-content">
+                                <!-- 左侧评估结果 -->
+                                <div class="result-left">
+                                    <div class="result-header">
+                                        <i class="fas fa-ship"></i>
+                                        <h3>运营效能评估</h3>
+                                    </div>
+                                    <div class="result-body">
+                                        <div class="result-item">
+                                            <span class="label">综合得分:</span>
+                                            <span class="value">92.5</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <span class="label">评估等级:</span>
+                                            <div class="grade-display">
+                                                <span class="value grade-s">S级</span>
+                                                <div class="pyramid-container">
+                                                    <div class="pyramid">
+                                                        <div class="pyramid-level level-s active" title="S级">S</div>
+                                                        <div class="pyramid-level level-a" title="A级">A</div>
+                                                        <div class="pyramid-level level-b" title="B级">B</div>
+                                                        <div class="pyramid-level level-c" title="C级">C</div>
+                                                        <div class="pyramid-level level-d" title="D级">D</div>
+                                                        <div class="pyramid-level level-e" title="E级">E</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="result-chart" id="operationalChart"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 右侧优化建议 -->
+                                <div class="result-right">
+                                    <div class="suggestion-header">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <h3>优化建议</h3>
+                                    </div>
+                                    <div class="suggestion-content">
+                                        <div class="suggestion-item">
+                                            <h4>运营效率提升</h4>
+                                            <ul>
+                                                <li>优化航线规划和调度</li>
+                                                <li>提高装载率和时间利用率</li>
+                                                <li>改进能源补给策略</li>
+                                                <li>优化船舶航速规划</li>
+                                            </ul>
+                                        </div>
+                                        <div class="suggestion-item">
+                                            <h4>安全管理优化</h4>
+                                            <ul>
+                                                <li>加强设备预防性维护</li>
+                                                <li>完善安全管理制度</li>
+                                                <li>提高应急响应能力</li>
+                                                <li>强化船员培训体系</li>
+                                            </ul>
+                                        </div>
+                                        <div class="suggestion-item">
+                                            <h4>经济性能优化</h4>
+                                            <ul>
+                                                <li>优化运营成本控制</li>
+                                                <li>提高能源使用效率</li>
+                                                <li>合理规划维护周期</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加模态框组件 -->
+    <div id="modalOverlay" class="modal-overlay">
+        <!-- 耗氢指数参数输入模态框 -->
+        <div id="hydrogenModal" class="modal-container">
+            <div class="modal-header">
+                <h3>船舶耗氢指数参数输入</h3>
+                <button class="close-btn" onclick="hideModal('hydrogen')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 基础参数组 -->
+                <div class="param-section">
+                    <h4>基础参数</h4>
+                    <div class="param-group">
+                        <label>氢气消耗量 (kg)</label>
+                        <input type="number" id="hydrogenConsumption" placeholder="请输入氢气消耗量">
+                    </div>
+                    <div class="param-group">
+                        <label>航行时间 (h)</label>
+                        <input type="number" id="sailingTime" placeholder="请输入航行时间">
+                    </div>
+                </div>
+
+                <!-- 性能参数组 -->
+                <div class="param-section">
+                    <h4>性能参数</h4>
+                    <div class="param-group">
+                        <label>氢气转换率 (%)</label>
+                        <input type="number" id="hydrogenConversionRate" placeholder="请输入氢气转换率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>氢气纯度 (%)</label>
+                        <input type="number" id="hydrogenPurity" placeholder="请输入氢气纯度" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>系统效率 (%)</label>
+                        <input type="number" id="systemEfficiency" placeholder="请输入系统效率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <!-- 运行参数组 -->
+                <div class="param-section">
+                    <h4>运行参数</h4>
+                    <div class="param-group">
+                        <label>平均船速 (节)</label>
+                        <input type="number" id="averageSpeed" placeholder="请输入平均船速">
+                    </div>
+                    <div class="param-group">
+                        <label>氢气压力 (MPa)</label>
+                        <input type="number" id="hydrogenPressure" placeholder="请输入氢气压力">
+                    </div>
+                    <div class="param-group">
+                        <label>环境温度 (℃)</label>
+                        <input type="number" id="ambientTemperature" placeholder="请输入环境温度">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="hideModal('hydrogen')">取消</button>
+                <button class="confirm-btn" onclick="saveHydrogenParams()">确认</button>
+            </div>
+        </div>
+
+        <!-- 燃料电池参数输入模态框 -->
+        <div id="fuelCellModal" class="modal-container">
+            <div class="modal-header">
+                <h3>燃料电池退化率参数入</h3>
+                <button class="close-btn" onclick="hideModal('fuelCell')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 基础性能参数 -->
+                <div class="param-section">
+                    <h4>基础性能参数</h4>
+                    <div class="param-group">
+                        <label>初始电压 (V)</label>
+                        <input type="number" id="initialVoltage" placeholder="请输入初始电压">
+                    </div>
+                    <div class="param-group">
+                        <label>当前电压 (V)</label>
+                        <input type="number" id="currentVoltage" placeholder="请输入当前电压">
+                    </div>
+                    <div class="param-group">
+                        <label>额定功率 (kW)</label>
+                        <input type="number" id="ratedPower" placeholder="请输入额定功率">
+                    </div>
+                </div>
+
+                <!-- 运行状态参数 -->
+                <div class="param-section">
+                    <h4>运行状态参数</h4>
+                    <div class="param-group">
+                        <label>运行时长 (h)</label>
+                        <input type="number" id="operatingHours" placeholder="请输入运行时长">
+                    </div>
+                    <div class="param-group">
+                        <label>启停次数</label>
+                        <input type="number" id="startStopCycles" placeholder="请输入启停次数">
+                    </div>
+                    <div class="param-group">
+                        <label>平均负载率 (%)</label>
+                        <input type="number" id="averageLoad" placeholder="请输入平均负载率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <!-- 环境参数 -->
+                <div class="param-section">
+                    <h4>环境参数</h4>
+                    <div class="param-group">
+                        <label>环境温度 (℃)</label>
+                        <input type="number" id="fcAmbientTemp" placeholder="请输入环境温度">
+                    </div>
+                    <div class="param-group">
+                        <label>环境湿度 (%)</label>
+                        <input type="number" id="humidity" placeholder="请输入环境湿度" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>工作压力 (MPa)</label>
+                        <input type="number" id="workingPressure" placeholder="请输入工作压力">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="hideModal('fuelCell')">取消</button>
+                <button class="confirm-btn" onclick="saveFuelCellParams()">确认</button>
+            </div>
+        </div>
+
+        <!-- 能源利用效率参数输入模态框 -->
+        <div id="energyModal" class="modal-container">
+            <div class="modal-header">
+                <h3>能源利用效率参数输入</h3>
+                <button class="close-btn" onclick="hideModal('energy')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 能源输入参数 -->
+                <div class="param-section">
+                    <h4>能源输入参数</h4>
+                    <div class="param-group">
+                        <label>氢气输入功率 (kW)</label>
+                        <input type="number" id="hydrogenInputPower" placeholder="请输入氢气输入功率">
+                    </div>
+                    <div class="param-group">
+                        <label>电池输入功率 (kW)</label>
+                        <input type="number" id="batteryInputPower" placeholder="请输入电池输��功率">
+                    </div>
+                    <div class="param-group">
+                        <label>其他能源输入 (kW)</label>
+                        <input type="number" id="otherInputPower" placeholder="请输入其他能源输入">
+                    </div>
+                </div>
+
+                <!-- 能源输出参数 -->
+                <div class="param-section">
+                    <h4>能源输出参数</h4>
+                    <div class="param-group">
+                        <label>推进功率 (kW)</label>
+                        <input type="number" id="propulsionPower" placeholder="请输入推进功率">
+                    </div>
+                    <div class="param-group">
+                        <label>辅���设备功率 (kW)</label>
+                        <input type="number" id="auxiliaryPower" placeholder="请输入辅助设备功率">
+                    </div>
+                    <div class="param-group">
+                        <label>其他用电负荷 (kW)</label>
+                        <input type="number" id="otherLoadPower" placeholder="请输入其他用电负荷">
+                    </div>
+                </div>
+
+                <!-- 系统参数 -->
+                <div class="param-section">
+                    <h4>系统参数</h4>
+                    <div class="param-group">
+                        <label>系统转换效率 (%)</label>
+                        <input type="number" id="conversionEfficiency" placeholder="请输入系统转换效率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>传输损耗率 (%)</label>
+                        <input type="number" id="transmissionLoss" placeholder="请输入传输损耗率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>能量回收率 (%)</label>
+                        <input type="number" id="energyRecovery" placeholder="请输入能量回收率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="hideModal('energy')">取消</button>
+                <button class="confirm-btn" onclick="saveEnergyParams()">确认</button>
+            </div>
+        </div>
+
+        <!-- 在其他模态框后添加运营效能指标参数输入模态框 -->
+        <div id="operationalModal" class="modal-container">
+            <div class="modal-header">
+                <h3>运营效能指标参数输入</h3>
+                <button class="close-btn" onclick="hideModal('operational')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 运营效率参数 -->
+                <div class="param-section">
+                    <h4>运营效率参数</h4>
+                    <div class="param-group">
+                        <label>航行时间利用率 (%)</label>
+                        <input type="number" id="timeUtilization" placeholder="请输入航行时间利用率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>载重量利用率 (%)</label>
+                        <input type="number" id="loadUtilization" placeholder="请输入载重量利用率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>航线准时率 (%)</label>
+                        <input type="number" id="punctualityRate" placeholder="请输入航线准时率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <!-- 能源管理参数 -->
+                <div class="param-section">
+                    <h4>能源管理参数</h4>
+                    <div class="param-group">
+                        <label>能源计划执行率 (%)</label>
+                        <input type="number" id="energyPlanRate" placeholder="请输入能源计划执行率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>能源使用合理率 (%)</label>
+                        <input type="number" id="energyRationalRate" placeholder="请输入能源使用合理率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>能源储备充足率 (%)</label>
+                        <input type="number" id="energyReserveRate" placeholder="请输入能源储备充足率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <!-- 安全运营参数 -->
+                <div class="param-section">
+                    <h4>安全运营参数</h4>
+                    <div class="param-group">
+                        <label>设备故障率 (%)</label>
+                        <input type="number" id="equipmentFailureRate" placeholder="请输入设备故障率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>安全事故率 (%)</label>
+                        <input type="number" id="safetyIncidentRate" placeholder="请输入安全事故率" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label>维护保养完成率 (%)</label>
+                        <input type="number" id="maintenanceRate" placeholder="请输入维护保养完成率" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="hideModal('operational')">取消</button>
+                <button class="confirm-btn" onclick="saveOperationalParams()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                const title = item.querySelector('h2');
+                const subMenu = item.querySelector('ul');
+                
+                // 初始化时设置子菜单为收起状态
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                
+                if (title) {
+                    title.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleMenuItem(item);
+                    });
+                }
+            });
+        });
+
+        function toggleMenuItem(targetMenuItem) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const subMenu = targetMenuItem.querySelector('ul');
+            
+            // 如果点击的是已经激��的菜单项，则关闭它
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            // 关闭其他打开的菜单项
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const otherSubMenu = item.querySelector('ul');
+                    if (otherSubMenu) {
+                        otherSubMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            // 打开目标菜单项
+            targetMenuItem.classList.add('active');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+
+        // 修改复选框的事件监听逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有评估指标复选框
+            const checkboxes = {
+                'hydrogenIndex': 'hydrogenIndexResult',
+                'fuelCellDegradation': 'fuelCellResult',
+                'energyEfficiency': 'energyEfficiencyResult',
+                'operationalEfficiency': 'operationalResult'
+            };
+
+            // 初始化时隐藏所有结果卡片
+            Object.values(checkboxes).forEach(resultId => {
+                const resultDiv = document.getElementById(resultId);
+                if (resultDiv) {
+                    resultDiv.style.display = 'none';
+                }
+            });
+
+            // 为每个复选框添加change事件监听
+            Object.keys(checkboxes).forEach(id => {
+                const checkbox = document.getElementById(id);
+                if (checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        const resultId = checkboxes[id];
+                        const resultDiv = document.getElementById(resultId);
+                        
+                        if (this.checked) {
+                            // 取消其他复选框的选中状态并隐藏其结果
+                            Object.keys(checkboxes).forEach(otherId => {
+                                if (otherId !== id) {
+                                    const otherCheckbox = document.getElementById(otherId);
+                                    if (otherCheckbox) {
+                                        otherCheckbox.checked = false;
+                                    }
+                                    const otherResultId = checkboxes[otherId];
+                                    const otherResultDiv = document.getElementById(otherResultId);
+                                    if (otherResultDiv) {
+                                        otherResultDiv.style.display = 'none';
+                                    }
+                                }
+                            });
+
+                            // 显示当前选中的结果
+                            if (resultDiv) {
+                                // 先重置样式
+                                resultDiv.style.cssText = '';
+                                resultDiv.style.display = 'block';
+                                
+                                // 确保结果内容正确显示
+                                const resultContent = resultDiv.querySelector('.result-content');
+                                if (resultContent) {
+                                    resultContent.style.display = 'flex';
+                                    resultContent.style.opacity = '1';
+                                }
+
+                                // 显示金字塔等级
+                                const pyramid = resultDiv.querySelector('.pyramid');
+                                if (pyramid) {
+                                    const levels = pyramid.querySelectorAll('.pyramid-level');
+                                    levels.forEach(level => {
+                                        level.style.transition = 'all 0.3s ease';
+                                        level.style.opacity = '1';
+                                    });
+                                }
+
+                                // 初始化图表
+                                const chartElement = resultDiv.querySelector('.result-chart');
+                                if (chartElement) {
+                                    // 确保图表容器可见
+                                    chartElement.style.height = '250px';
+                                    chartElement.style.width = '100%';
+                                    
+                                    // 销毁已存在的图表实例
+                                    const existingChart = echarts.getInstanceByDom(chartElement);
+                                    if (existingChart) {
+                                        existingChart.dispose();
+                                    }
+                                    
+                                    // 初始化新的图表
+                                    setTimeout(() => {
+                                        const chart = echarts.init(chartElement);
+                                        const option = getChartOption(resultId);
+                                        if (option) {
+                                            chart.setOption(option);
+                                        }
+                                    }, 100);
+                                }
+
+                                // 显示建议内容
+                                const suggestionContent = resultDiv.querySelector('.suggestion-content');
+                                if (suggestionContent) {
+                                    suggestionContent.style.display = 'flex';
+                                    suggestionContent.style.opacity = '1';
+                                }
+                            }
+                        } else {
+                            // 隐藏结果
+                            if (resultDiv) {
+                                resultDiv.style.display = 'none';
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 添加评估结果区域的可见性检查
+            const evaluationResults = document.querySelector('.evaluation-results');
+            if (evaluationResults) {
+                evaluationResults.style.display = 'block';
+            }
+        });
+
+        // 添加获取图表配置的函数
+        function getChartOption(resultId) {
+            switch(resultId) {
+                case 'hydrogenIndexResult':
+                    return {
+                        title: {
+                            text: '船舶耗氢指数趋势',
+                            textStyle: {
+                                fontSize: 14,
+                                color: '#2c3e50'
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            formatter: '{b}: {c} kg/海里',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        grid: {
+                            top: 40,
+                            left: 50,
+                            right: 20,
+                            bottom: 40
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '耗氢量(kg/海里)',
+                            nameTextStyle: {
+                                color: '#666'
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: '耗氢指数',
+                            type: 'bar',
+                            data: [0.95, 0.92, 0.88, 0.85, 0.83, 0.82],
+                            itemStyle: {
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                        offset: 0,
+                                        color: '#2ecc71'
+                                    }, {
+                                        offset: 1,
+                                        color: 'rgba(46,204,113,0.3)'
+                                    }]
+                                },
+                                borderRadius: [4, 4, 0, 0]
+                            },
+                            barWidth: '40%',
+                            markLine: {
+                                data: [
+                                    {
+                                        type: 'average',
+                                        name: '平均值',
+                                        lineStyle: {
+                                            color: '#e74c3c',
+                                            type: 'dashed'
+                                        },
+                                        label: {
+                                            position: 'end',
+                                            formatter: '平均: {c}'
+                                        }
+                                    }
+                                ]
+                            }
+                        }]
+                    };
+
+                case 'energyEfficiencyResult':
+                    return {
+                        title: {
+                            text: '能源利用效率分析',
+                            textStyle: {
+                                fontSize: 14,
+                                color: '#2c3e50'
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'item'
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            right: 10,
+                            top: 'center'
+                        },
+                        series: [
+                            {
+                                name: '能源利用',
+                                type: 'pie',
+                                radius: ['40%', '70%'],
+                                avoidLabelOverlap: false,
+                                itemStyle: {
+                                    borderRadius: 10,
+                                    borderColor: '#fff',
+                                    borderWidth: 2
+                                },
+                                label: {
+                                    show: false,
+                                    position: 'center'
+                                },
+                                emphasis: {
+                                    label: {
+                                        show: true,
+                                        fontSize: '14',
+                                        fontWeight: 'bold'
+                                    }
+                                },
+                                labelLine: {
+                                    show: false
+                                },
+                                data: [
+                                    { value: 78.5, name: '有效利用', itemStyle: { color: '#2ecc71' } },
+                                    { value: 12.3, name: '转换损耗', itemStyle: { color: '#e74c3c' } },
+                                    { value: 5.8, name: '传输损耗', itemStyle: { color: '#f1c40f' } },
+                                    { value: 3.4, name: '其他损耗', itemStyle: { color: '#95a5a6' } }
+                                ]
+                            }
+                        ]
+                    };
+
+                case 'fuelCellResult':
+                    return {
+                        title: {
+                            text: '燃料电池性能退化趋势',
+                            textStyle: {
+                                fontSize: 14,
+                                color: '#2c3e50'
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        grid: {
+                            top: 40,
+                            left: 50,
+                            right: 20,
+                            bottom: 40
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '性能退化率(%)',
+                            nameTextStyle: {
+                                color: '#666'
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        series: [{
+                            data: [0.5, 1.2, 1.8, 2.3, 2.8, 3.2],
+                            type: 'line',
+                            smooth: true,
+                            lineStyle: {
+                                color: '#3498db'
+                            },
+                            areaStyle: {
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                        offset: 0,
+                                        color: 'rgba(52,152,219,0.3)'
+                                    }, {
+                                        offset: 1,
+                                        color: 'rgba(52,152,219,0.1)'
+                                    }]
+                                }
+                            }
+                        }]
+                    };
+                case 'operationalResult':
+                    return {
+                        title: {
+                            text: '运营效能指标分析',
+                            textStyle: {
+                                fontSize: 14,
+                                color: '#2c3e50'
+                            }
+                        },
+                        radar: {
+                            indicator: [
+                                { name: '时间利用率', max: 100},
+                                { name: '载重利用率', max: 100},
+                                { name: '准时率', max: 100},
+                                { name: '能源计划执行率', max: 100},
+                                { name: '安全指标', max: 100}
+                            ],
+                            splitArea: {
+                                areaStyle: {
+                                    color: ['rgba(255,255,255,0.3)']
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'radar',
+                            data: [{
+                                value: [90, 85, 95, 88, 92],
+                                name: '运营指标',
+                                lineStyle: {
+                                    color: '#3498db'
+                                },
+                                areaStyle: {
+                                    color: 'rgba(52,152,219,0.3)'
+                                }
+                            }]
+                        }]
+                    };
+                default:
+                    return null;
+            }
+        }
+
+        // 移除原有的showResult和hideResult函数，因为相关逻辑已经整合到复选框事件处理中
+
+        // 保存参数
+        function saveHydrogenParams() {
+            // 获取所有参数值
+            const params = {
+                consumption: document.getElementById('hydrogenConsumption').value,
+                sailingTime: document.getElementById('sailingTime').value,
+                conversionRate: document.getElementById('hydrogenConversionRate').value,
+                purity: document.getElementById('hydrogenPurity').value,
+                systemEfficiency: document.getElementById('systemEfficiency').value,
+                averageSpeed: document.getElementById('averageSpeed').value,
+                pressure: document.getElementById('hydrogenPressure').value,
+                temperature: document.getElementById('ambientTemperature').value
+            };
+            
+            // 验证参数
+            if (validateParams(params)) {
+                // 更新评估结果
+                updateHydrogenResult(params);
+                // 隐藏模态框
+                hideModal('hydrogen');
+            }
+        }
+
+        function validateParams(params) {
+            // 添加参数验证逻辑
+            for (let key in params) {
+                if (!params[key]) {
+                    alert('请填写所有必要参数');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function updateHydrogenResult(params) {
+            // 根据新的参数更新评估结果
+            // ...
+        }
+
+        // 其他参数保存和结果更新函数...
+
+        function saveFuelCellParams() {
+            // 获取所有燃料电池参数
+            const params = {
+                initialVoltage: document.getElementById('initialVoltage').value,
+                currentVoltage: document.getElementById('currentVoltage').value,
+                ratedPower: document.getElementById('ratedPower').value,
+                operatingHours: document.getElementById('operatingHours').value,
+                startStopCycles: document.getElementById('startStopCycles').value,
+                averageLoad: document.getElementById('averageLoad').value,
+                fcAmbientTemp: document.getElementById('fcAmbientTemp').value,
+                humidity: document.getElementById('humidity').value,
+                workingPressure: document.getElementById('workingPressure').value
+            };
+            
+            // 验证参数
+            if (validateFuelCellParams(params)) {
+                // 更新评估结果
+                updateFuelCellResult(params);
+                // 隐藏模态框
+                hideModal('fuelCell');
+            }
+        }
+
+        function validateFuelCellParams(params) {
+            // 参数验证逻辑
+            for (let key in params) {
+                if (!params[key]) {
+                    alert('请填写所有必要参数');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function updateFuelCellResult(params) {
+            // 根据参数更新燃料电池退化率评估结果
+            // ...
+        }
+
+        function saveEnergyParams() {
+            // 获取所有能源利用效率参数
+            const params = {
+                hydrogenInputPower: document.getElementById('hydrogenInputPower').value,
+                batteryInputPower: document.getElementById('batteryInputPower').value,
+                otherInputPower: document.getElementById('otherInputPower').value,
+                propulsionPower: document.getElementById('propulsionPower').value,
+                auxiliaryPower: document.getElementById('auxiliaryPower').value,
+                otherLoadPower: document.getElementById('otherLoadPower').value,
+                conversionEfficiency: document.getElementById('conversionEfficiency').value,
+                transmissionLoss: document.getElementById('transmissionLoss').value,
+                energyRecovery: document.getElementById('energyRecovery').value
+            };
+            
+            // 验证参数
+            if (validateEnergyParams(params)) {
+                // 更新评估结果
+                updateEnergyResult(params);
+                // 隐藏模态框
+                hideModal('energy');
+            }
+        }
+
+        function validateEnergyParams(params) {
+            // 参数验证逻辑
+            for (let key in params) {
+                if (!params[key]) {
+                    alert('请填写所有必要参数');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function updateEnergyResult(params) {
+            // 根据参数更新能源利用效率评估结果
+            // ...
+        }
+
+        function saveOperationalParams() {
+            // 获取所有运营效能参数
+            const params = {
+                timeUtilization: document.getElementById('timeUtilization').value,
+                loadUtilization: document.getElementById('loadUtilization').value,
+                punctualityRate: document.getElementById('punctualityRate').value,
+                energyPlanRate: document.getElementById('energyPlanRate').value,
+                energyRationalRate: document.getElementById('energyRationalRate').value,
+                energyReserveRate: document.getElementById('energyReserveRate').value,
+                equipmentFailureRate: document.getElementById('equipmentFailureRate').value,
+                safetyIncidentRate: document.getElementById('safetyIncidentRate').value,
+                maintenanceRate: document.getElementById('maintenanceRate').value
+            };
+            
+            // 验证参数
+            if (validateOperationalParams(params)) {
+                // 更新评估结果
+                updateOperationalResult(params);
+                // 隐藏模态框
+                hideModal('operational');
+            }
+        }
+
+        function validateOperationalParams(params) {
+            // 参数验证逻辑
+            for (let key in params) {
+                if (!params[key]) {
+                    alert('请填写所有必要参数');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function updateOperationalResult(params) {
+            // 根据参数更新运营效能评估结果
+            // ...
+        }
+
+        function updateGradeDisplay(resultId, grade) {
+            const resultCard = document.getElementById(resultId);
+            const pyramid = resultCard.querySelector('.pyramid');
+            
+            // 移除所有active类
+            pyramid.querySelectorAll('.pyramid-level').forEach(level => {
+                level.classList.remove('active');
+            });
+            
+            // 添加active类到当前等级
+            const currentLevel = pyramid.querySelector(`.level-${grade.toLowerCase()}`);
+            if (currentLevel) {
+                currentLevel.classList.add('active');
+            }
+            
+            // 更新等级文本
+            const gradeText = resultCard.querySelector('.value');
+            gradeText.className = `value grade-${grade.toLowerCase()}`;
+            gradeText.textContent = `${grade}级`;
+        }
+
+        // 在更新评估结果时调用
+        function updateAssessmentResult(result) {
+            // ... 其他更新逻辑 ...
+            updateGradeDisplay(result.resultId, result.grade);
+        }
+
+        // 添加窗口大小变化时的图表重绘逻辑
+        window.addEventListener('resize', function() {
+            const charts = document.querySelectorAll('.result-chart');
+            charts.forEach(chartElement => {
+                const chart = echarts.getInstanceByDom(chartElement);
+                if (chart) {
+                    chart.resize();
+                }
+            });
+        });
+
+        // 修改显示模态框函数
+        function showModal(type) {
+            const overlay = document.getElementById('modalOverlay');
+            const modal = document.getElementById(`${type}Modal`);
+            if (overlay && modal) {
+                overlay.style.display = 'flex';
+                modal.style.display = 'block';
+            }
+        }
+
+        // 修改隐藏模态框函数
+        function hideModal(type) {
+            const overlay = document.getElementById('modalOverlay');
+            const modal = document.getElementById(`${type}Modal`);
+            if (overlay && modal) {
+                overlay.style.display = 'none';
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

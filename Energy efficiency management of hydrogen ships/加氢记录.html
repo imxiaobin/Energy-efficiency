@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加氢记录</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="js/common.js"></script>
+    <style>
+        /* 基础布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 侧边栏菜单项样式 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 为每个菜单项添加图标 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 为每个菜单项添加特定图标 */
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        /* 修改子菜单项样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        /* 为子菜单项添加小图标 */
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 悬停效果 */
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 活动状态样式 */
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .nav-item a i {
+            font-size: 18px;
+        }
+
+        /* 添加图标悬停效果 */
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* 主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0; /* 防止flex子项溢出 */
+        }
+
+        /* 搜索区域样式 */
+        .search-area {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .search-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .search-group-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e6ed;
+        }
+
+        .search-group-title i {
+            font-size: 20px;
+            color: #3498db;
+        }
+
+        .search-group-title span {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .search-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-item label {
+            min-width: 80px;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .search-item input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-item input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .date-range-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .date-range-container input[type="date"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .date-separator {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .search-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding-top: 10px;
+        }
+
+        .search-btn, .reset-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        .search-btn:hover, .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-btn i, .reset-btn i {
+            font-size: 14px;
+        }
+
+        /* 表格区域样式 */
+        .table-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .table-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-title i {
+            font-size: 20px;
+            color: #3498db;
+        }
+
+        .table-title span {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .import-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn:active {
+            transform: translateY(1px);
+        }
+
+        .action-btn i {
+            font-size: 16px;
+        }
+
+        /* 表格内操作按钮样式美化 */
+        .operation-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .operation-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .operation-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .operation-btn:active {
+            transform: translateY(1px);
+        }
+
+        .table-scroll-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .pagination-info {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .page-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-jump {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .jump-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .jump-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .page-size-selector select {
+            padding: 10px;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        /* 添加/编辑加氢记录的模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            padding: 30px;
+            border-radius: 20px;
+            width: 800px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e6ed;
+        }
+
+        .modal-header h3 {
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .close {
+            font-size: 28px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close:hover {
+            color: #e74c3c;
+            transform: rotate(90deg);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative;
+        }
+
+        .form-group::before {
+            content: '';
+            position: absolute;
+            left: calc(20% + 12px);
+            top: 38px;
+            width: 16px;
+            height: 16px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 60%;
+            padding: 12px 15px 12px 35px;
+            border: 1px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:invalid,
+        .form-group select:invalid {
+            border-color: #e0e6ed;
+            box-shadow: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: transparent;
+            outline: none;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(45deg, #3498db, #2980b9) border-box;
+            border: 1px solid transparent;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group input:hover,
+        .form-group select:hover {
+            border-color: #3498db;
+            transform: translateY(-1px);
+        }
+
+        .required {
+            color: #3498db;
+            margin-left: 4px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .form-group input:invalid:focus,
+        .form-group select:invalid:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        @keyframes input-focus {
+            0% {
+                background-position: 35px center;
+            }
+            50% {
+                background-position: 37px center;
+            }
+            100% {
+                background-position: 35px center;
+            }
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+            width: 60%;
+        }
+
+        .modal-content {
+            width: 700px;
+            max-height: 85vh;
+            padding: 25px;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+        }
+
+        /* 添加动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -60%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%);
+                opacity: 1;
+            }
+        }
+
+        /* 美化滚动条 */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 必填字段标记样式 */
+        .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        /* 表单验证提示样式 */
+        .form-group input:invalid,
+        .form-group select:invalid {
+            border-color: #e74c3c;
+        }
+
+        .form-group input:invalid:focus,
+        .form-group select:invalid:focus {
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏部分 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <div class="menu-item-wrap">
+                <h2>船舶管理</h2>
+                <ul id="menu0">
+                    <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <div class="menu-item-wrap">
+                <h2>信息记录</h2>
+                <ul id="menu1">
+                    <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                    <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                    <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                    <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                    <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <div class="menu-item-wrap">
+                <h2>能效分析</h2>
+                <ul id="menu2">
+                    <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                    <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                    <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                    <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <div class="menu-item-wrap">
+                <h2>报表管理</h2>
+                <ul id="menu3">
+                    <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                    <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                    <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <div class="menu-item-wrap">
+                <h2>在职人员管理</h2>
+                <ul id="reportGen">
+                    <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                    <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 页眉部分 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 在main-content中添加搜索模块 -->
+        <div class="search-area">
+            <div class="search-group">
+                <div class="search-group-title">
+                    <i class="fas fa-ship"></i>
+                    <span>船舶信息</span>
+                </div>
+                <div class="search-fields">
+                    <div class="search-item">
+                        <label>船名：</label>
+                        <input type="text" placeholder="请输入船名">
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-group">
+                <div class="search-group-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>加氢信息</span>
+                </div>
+                <div class="search-fields">
+                    <div class="search-item">
+                        <label>加氢港口：</label>
+                        <input type="text" placeholder="请输入加氢港口">
+                    </div>
+                    <div class="search-item">
+                        <label>加氢地址：</label>
+                        <input type="text" placeholder="请输入加氢地址">
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-group">
+                <div class="search-group-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>时间范围</span>
+                </div>
+                <div class="search-fields">
+                    <div class="search-item">
+                        <label>加氢日期：</label>
+                        <div class="date-range-container">
+                            <input type="date" id="startDate">
+                            <span class="date-separator">至</span>
+                            <input type="date" id="endDate">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-actions">
+                <button class="search-btn" onclick="searchRefuelingRecords()">
+                    <i class="fas fa-search"></i>
+                    搜索
+                </button>
+                <button class="reset-btn" onclick="resetSearch()">
+                    <i class="fas fa-redo"></i>
+                    重置
+                </button>
+            </div>
+        </div>
+
+        <!-- 在main-content中添加表格区域 -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <i class="fas fa-gas-pump"></i>
+                    <span>加氢记录列表</span>
+                </div>
+                <div class="table-actions">
+                    <button class="action-btn import-btn" onclick="importRefuelingData()">
+                        <i class="fas fa-file-import"></i>
+                        导入加氢单信息
+                    </button>
+                    <button class="action-btn export-btn" onclick="exportRefuelingData()">
+                        <i class="fas fa-file-export"></i>
+                        导出加氢单信息
+                    </button>
+                    <button class="action-btn add-btn" onclick="showAddRefuelingDialog()">
+                        <i class="fas fa-plus"></i>
+                        新增加氢单记录
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-scroll-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>船名</th>
+                            <th>船舶编号</th>
+                            <th>加氢港口</th>
+                            <th>加氢地址</th>
+                            <th>加氢日期</th>
+                            <th>靠泊时间</th>
+                            <th>加氢量(kg)</th>
+                            <th>加氢压力(MPa)</th>
+                            <th>加氢温度(℃)</th>
+                            <th>负责人员</th>
+                            <th>联系电话</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="refuelingTableBody">
+                        <!-- 示例数据 -->
+                        <tr>
+                            <td>氢能1号</td>
+                            <td>HV20240101</td>
+                            <td>上海港</td>
+                            <td>上海港加氢站</td>
+                            <td>2024-01-15</td>
+                            <td>09:30</td>
+                            <td>500</td>
+                            <td>35</td>
+                            <td>25</td>
+                            <td>三</td>
+                            <td>13812345678</td>
+                            <td>
+                                <div class="operation-btns">
+                                    <button class="operation-btn edit-btn" title="编辑" onclick="editRefuelingRecord(1)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="operation-btn delete-btn" title="删除" onclick="deleteRefuelingRecord(1)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    <span>共 <span id="totalPages">10</span> 页，</span>
+                    <span><span id="totalRecords">100</span> 条记录</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="goToFirstPage()">首页</button>
+                    <button class="page-btn" onclick="goToPrevPage()">上一页</button>
+                    <div class="page-jump">
+                        <span>第</span>
+                        <input type="number" id="jumpPageInput" min="1" value="1">
+                        <span>页</span>
+                        <button class="jump-btn" onclick="jumpToPage()">跳转</button>
+                    </div>
+                    <button class="page-btn" onclick="goToNextPage()">下一页</button>
+                    <button class="page-btn" onclick="goToLastPage()">末页</button>
+                </div>
+                <div class="page-size-selector">
+                    <span>每页显示：</span>
+                    <select onchange="changePageSize(this.value)">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span>条</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑加氢记录的模态框 -->
+        <div id="refuelingModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">新增加氢记录</h3>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="refuelingForm">
+                        <div class="form-group ship-name">
+                            <label>船名：</label>
+                            <input type="text" id="shipName" required>
+                        </div>
+                        <div class="form-group ship-id">
+                            <label>船舶编号：</label>
+                            <input type="text" id="shipId" required>
+                        </div>
+                        <div class="form-group port">
+                            <label>加氢港口：</label>
+                            <input type="text" id="port" required>
+                        </div>
+                        <div class="form-group port">
+                            <label>加氢地址：</label>
+                            <input type="text" id="address" required>
+                        </div>
+                        <div class="form-group date">
+                            <label>加氢日期：</label>
+                            <input type="date" id="refuelingDate" required>
+                        </div>
+                        <div class="form-group time">
+                            <label>靠泊时间：</label>
+                            <input type="time" id="berthTime" required>
+                        </div>
+                        <div class="form-group amount">
+                            <label>加氢量(kg)：</label>
+                            <input type="number" id="refuelingAmount" required min="0">
+                        </div>
+                        <div class="form-group pressure">
+                            <label>加氢压力(MPa)：</label>
+                            <input type="number" id="refuelingPressure" required min="0">
+                        </div>
+                        <div class="form-group temperature">
+                            <label>加氢温度(℃)：</label>
+                            <input type="number" id="refuelingTemp" required>
+                        </div>
+                        <div class="form-group person">
+                            <label>负责人员：</label>
+                            <input type="text" id="responsiblePerson" required>
+                        </div>
+                        <div class="form-group phone">
+                            <label>联系电话：</label>
+                            <input type="tel" id="contactPhone" required pattern="[0-9]{11}">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn save-btn" onclick="saveRefuelingRecord()">保存</button>
+                    <button class="btn cancel-btn" onclick="closeModal()">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载完成后初始化菜单
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有菜单项的包装器添加点击事件
+            document.querySelectorAll('.menu-item-wrap').forEach(wrap => {
+                wrap.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    
+                    // 获取当前菜单项
+                    const menuItem = this.closest('.menu-item');
+                    
+                    // 关闭其他菜单
+                    document.querySelectorAll('.menu-item').forEach(item => {
+                        if (item !== menuItem && item.classList.contains('active')) {
+                            item.classList.remove('active');
+                        }
+                    });
+                    
+                    // 切换当前菜单
+                    menuItem.classList.toggle('active');
+                });
+            });
+
+            // 阻止菜单项点击事件冒泡
+            document.querySelectorAll('.menu-item ul li').forEach(li => {
+                li.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化表格数据
+            loadTableData();
+            
+            // 设置默认日期
+            const today = new Date();
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = today;
+        });
+
+        // 加载表格数据
+        function loadTableData() {
+            // 这里添加从服务器获取数据的逻辑
+            console.log('加载表格数据');
+        }
+
+        // 导入加氢单信息
+        function importRefuelingData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx,.xls,.csv';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                // 这里添加处理文件的逻辑
+                console.log('导入文件:', file.name);
+            };
+            input.click();
+        }
+
+        // 导出加氢单信息
+        function exportRefuelingData() {
+            // 这里添加导出数据的逻辑
+            console.log('导出加氢单信息');
+        }
+
+        // 显示新增加氢记录对话框
+        function showAddRefuelingDialog() {
+            const modal = document.getElementById('refuelingModal');
+            const modalTitle = document.getElementById('modalTitle');
+            modalTitle.textContent = '新增加氢记录';
+            
+            // 清空表单
+            document.getElementById('refuelingForm').reset();
+            
+            modal.style.display = 'block';
+        }
+
+        // 编辑加氢记录
+        function editRefuelingRecord(id) {
+            const modal = document.getElementById('refuelingModal');
+            const modalTitle = document.getElementById('modalTitle');
+            modalTitle.textContent = '编辑加氢记录';
+            
+            // 这里添加加载记录数据的逻辑
+            console.log('编辑记录:', id);
+            
+            modal.style.display = 'block';
+        }
+
+        // 删除加氢记录
+        function deleteRefuelingRecord(id) {
+            if (confirm('确定要删除这条加氢记录吗？')) {
+                // 找到对应的行并删除
+                const tr = event.target.closest('tr');
+                if (tr) {
+                    tr.remove();
+                    // 更新记录数量
+                    updateRecordCount(-1);
+                }
+            }
+        }
+
+        // 保存加氢记录
+        function saveRefuelingRecord() {
+            const form = document.getElementById('refuelingForm');
+            if (form.checkValidity()) {
+                const formData = {
+                    shipName: document.getElementById('shipName').value,
+                    shipId: document.getElementById('shipId').value,
+                    port: document.getElementById('port').value,
+                    address: document.getElementById('address').value,
+                    refuelingDate: document.getElementById('refuelingDate').value,
+                    berthTime: document.getElementById('berthTime').value,
+                    refuelingAmount: document.getElementById('refuelingAmount').value,
+                    refuelingPressure: document.getElementById('refuelingPressure').value,
+                    refuelingTemp: document.getElementById('refuelingTemp').value,
+                    responsiblePerson: document.getElementById('responsiblePerson').value,
+                    contactPhone: document.getElementById('contactPhone').value
+                };
+                
+                // 添加新记录到表格
+                addRecordToTable(formData);
+                
+                closeModal();
+            } else {
+                form.reportValidity();
+            }
+        }
+
+        // 添加新函数用于将记录添加到表格
+        function addRecordToTable(data) {
+            const tbody = document.getElementById('refuelingTableBody');
+            const tr = document.createElement('tr');
+            
+            tr.innerHTML = `
+                <td>${data.shipName}</td>
+                <td>${data.shipId}</td>
+                <td>${data.port}</td>
+                <td>${data.address}</td>
+                <td>${data.refuelingDate}</td>
+                <td>${data.berthTime}</td>
+                <td>${data.refuelingAmount}</td>
+                <td>${data.refuelingPressure}</td>
+                <td>${data.refuelingTemp}</td>
+                <td>${data.responsiblePerson}</td>
+                <td>${data.contactPhone}</td>
+                <td>
+                    <div class="operation-btns">
+                        <button class="operation-btn edit-btn" title="编辑" onclick="editRefuelingRecord('${data.shipId}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="operation-btn delete-btn" title="删除" onclick="deleteRefuelingRecord('${data.shipId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            // 将新行插入到表格的开头
+            tbody.insertBefore(tr, tbody.firstChild);
+            
+            // 更新总记录数
+            updateRecordCount(1);
+        }
+
+        // 添加新函数用于更新记录数量
+        function updateRecordCount(increment) {
+            const totalRecordsSpan = document.getElementById('totalRecords');
+            const currentTotal = parseInt(totalRecordsSpan.textContent);
+            totalRecordsSpan.textContent = currentTotal + increment;
+            
+            // 更新总页数
+            const pageSize = parseInt(document.querySelector('.page-size-selector select').value);
+            const totalPages = Math.ceil((currentTotal + increment) / pageSize);
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('refuelingModal').style.display = 'none';
+        }
+
+        // 分页相关函数
+        function goToFirstPage() {
+            console.log('跳转到第一页');
+        }
+
+        function goToPrevPage() {
+            console.log('跳转到上一页');
+        }
+
+        function goToNextPage() {
+            console.log('跳转到下一页');
+        }
+
+        function goToLastPage() {
+            console.log('跳转到最后一页');
+        }
+
+        function jumpToPage() {
+            const pageNum = document.getElementById('jumpPageInput').value;
+            console.log('跳转到第', pageNum, '页');
+        }
+
+        function changePageSize(size) {
+            console.log('修改每页显示数量为:', size);
+        }
+
+        // 搜索加氢记录
+        function searchRefuelingRecords() {
+            const searchData = {
+                shipName: document.querySelector('input[placeholder="请输入船名"]').value,
+                port: document.querySelector('input[placeholder="请输入加氢港口"]').value,
+                address: document.querySelector('input[placeholder="请输入加氢地址"]').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
+            };
+            
+            console.log('搜索条件:', searchData);
+            // 这里添加搜索逻辑
+        }
+
+        // 重置搜索条件
+        function resetSearch() {
+            const inputs = document.querySelectorAll('.search-item input');
+            inputs.forEach(input => input.value = '');
+            
+            const today = new Date();
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = today;
+        }
+    </script>
+</body>
+</html>

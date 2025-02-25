@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能耗记录表</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 从船舶信息管理.html复制基础布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        /* 从船舶信息管理.html复制侧边栏样式 */
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 从船舶信息管理.html复制侧边栏菜单项样式 */
+        .sidebar .menu-item-wrap {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 复制所有菜单图标样式 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        #menuItem0 h2::before {
+            content: "\f54b";
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";
+            color: #9b59b6;
+        }
+
+        /* 复制子菜单样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+            opacity: 0.8;
+            background: transparent;
+        }
+
+        .sidebar .menu-item li:hover {
+            opacity: 1;
+            transform: translateX(5px);
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";  /* 箭头图标 */
+            position: absolute;
+            left: 25px;
+            color: rgba(44, 62, 80, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 复制页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* 复制导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 复制主内容区域样式 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+        }
+
+        /* 这里可以添加能耗记录表特有的样式... */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            opacity: 0;
+            transform: translateY(-5px);
+            visibility: hidden;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 1000px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        /* 子菜单项的渐入效果 */
+        .sidebar .menu-item ul li {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition-delay: calc(0.1s * var(--item-index, 0));
+        }
+
+        .sidebar .menu-item.active ul li {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* 添加菜单标题悬停效果 */
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 激活状态的菜单标题样式 */
+        .sidebar .menu-item.active h2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        /* 修改子菜单项样式 */
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+            opacity: 0.8;
+            background: transparent;
+        }
+
+        .sidebar .menu-item li:hover {
+            opacity: 1;
+            transform: translateX(5px);
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 修改子菜单项箭头图标样式 */
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(44, 62, 80, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 子菜单项悬停时箭头动画 */
+        .sidebar .menu-item li:hover::before {
+            transform: translateX(3px);
+            color: #3498db;
+        }
+
+        /* 添加菜单展开/收起时的平滑过渡 */
+        .sidebar .menu-item {
+            margin-bottom: 5px;
+            transition: margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .staff-table-container {
+            margin: 20px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .staff-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .staff-table th,
+        .staff-table td {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .staff-table th {
+            background-color: #f5f7fa;
+            font-weight: bold;
+        }
+
+        .department-header {
+            background-color: #edf2f7;
+            font-weight: bold;
+        }
+
+        .table-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .table-actions button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .add-row-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .export-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .duty-description {
+            margin: 20px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .duty-content {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .duty-section {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .duty-section.deck {
+            border-left-color: #3498db;
+        }
+
+        .duty-section.engine {
+            border-left-color: #e74c3c;
+        }
+
+        .duty-section.others {
+            border-left-color: #2ecc71;
+        }
+
+        .duty-section h4 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .duty-section ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .duty-section li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            color: #4a5568;
+        }
+
+        .duty-section li strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .duty-section li p {
+            margin: 0;
+            padding-left: 15px;
+        }
+
+        .edit-btn, .delete-btn {
+            padding: 5px;
+            margin: 0 3px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background-color: #ffd700;
+        }
+
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 复制侧边栏结构 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 复制页眉结构 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 添加表格部分 -->
+        <div class="staff-table-container">
+            <h2>在职人员信息表</h2>
+            <table class="staff-table">
+                <thead>
+                    <tr>
+                        <th>职位</th>
+                        <th>姓名</th>
+                        <th>电话</th>
+                        <th>在班时间</th>
+                        <th>证书编号</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 甲板部 -->
+                    <tr class="department-header">
+                        <td colspan="6">甲板部</td>
+                    </tr>
+                    <tr>
+                        <td>船长</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>大副</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>二副</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>三副</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+
+                    <!-- 轮机部 -->
+                    <tr class="department-header">
+                        <td colspan="6">轮机部</td>
+                    </tr>
+                    <tr>
+                        <td>轮机长</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>大管轮</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>二管轮</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>三管轮</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>电机员</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+
+                    <!-- 其他船员 -->
+                    <tr class="department-header">
+                        <td colspan="6">其他船员</td>
+                    </tr>
+                    <tr>
+                        <td>水手长</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>木工</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>大厨</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>水手</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td>
+                            <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="table-actions">
+                <button class="add-row-btn"><i class="fas fa-plus"></i> 添加人员</button>
+                <button class="export-btn"><i class="fas fa-download"></i> 导出表格</button>
+            </div>
+        </div>
+
+        <!-- 添加职责说明部分 -->
+        <div class="duty-description">
+            <h3>职位职责说明</h3>
+            <div class="duty-content">
+                <div class="duty-section deck">
+                    <h4>甲板部</h4>
+                    <ul>
+                        <li>
+                            <strong>船长</strong>
+                            <p>负责全船的管理与驾驶，确保船舶和船员的安全，执行公司的各项规章制度</p>
+                        </li>
+                        <li>
+                            <strong>大副</strong>
+                            <p>负责甲板部分的工作安排、货物的配载计划制定与装卸货管理</p>
+                        </li>
+                        <li>
+                            <strong>二副</strong>
+                            <p>负责驾驶任务、驾驶设备的技术管理、航海图资料的更新维护</p>
+                        </li>
+                        <li>
+                            <strong>三副</strong>
+                            <p>负责船舶航行、停泊值班，主管安全消防设备的技术管理</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="duty-section engine">
+                    <h4>轮机部</h4>
+                    <ul>
+                        <li>
+                            <strong>轮机长</strong>
+                            <p>负责船舶机械设备的操作、维护和管理，确保轮机部安全运行</p>
+                        </li>
+                        <li>
+                            <strong>大管轮</strong>
+                            <p>负责轮机部设备的安全运行和防污染工作</p>
+                        </li>
+                        <li>
+                            <strong>二管轮</strong>
+                            <p>负责辅助设备和电气设备的日常维护与管理</p>
+                        </li>
+                        <li>
+                            <strong>三管轮</strong>
+                            <p>协助管理辅助设备，执行轮机值班任务</p>
+                        </li>
+                        <li>
+                            <strong>电机员</strong>
+                            <p>主管船舶电机和船上所有电气设备的维护保养</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="duty-section others">
+                    <h4>其他船员</h4>
+                    <ul>
+                        <li>
+                            <strong>水手长</strong>
+                            <p>负责甲板部日常维护和保养工作的组织实施</p>
+                        </li>
+                        <li>
+                            <strong>木工</strong>
+                            <p>负责船上木制品的维修、保养和更新</p>
+                        </li>
+                        <li>
+                            <strong>大厨</strong>
+                            <p>负责船员日常饮食制作和厨房卫生管理</p>
+                        </li>
+                        <li>
+                            <strong>水手</strong>
+                            <p>执行船舶甲板日常工作、设备维护和值班瞭望</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制JavaScript代码 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            // 为每个子菜单项添加索引，用于创建级联动画
+            menuItems.forEach(item => {
+                const menuItems = item.querySelectorAll('li');
+                menuItems.forEach((menuItem, index) => {
+                    menuItem.style.setProperty('--item-index', index);
+                });
+            });
+
+            menuItems.forEach(item => {
+                const title = item.querySelector('h2');
+                if (title) {
+                    title.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        // 直接切换当前菜单项的active状态
+                        item.classList.toggle('active');
+                        
+                        // 关闭其他打开的菜单
+                        menuItems.forEach(otherItem => {
+                            if (otherItem !== item && otherItem.classList.contains('active')) {
+                                otherItem.classList.remove('active');
+                            }
+                        });
+                    });
+                }
+            });
+
+            // 添加新的按钮功能代码
+            const addRowBtn = document.querySelector('.add-row-btn');
+            const exportBtn = document.querySelector('.export-btn');
+            const staffTable = document.querySelector('.staff-table tbody');
+
+            // 添加人员按钮点击事件
+            addRowBtn.addEventListener('click', function() {
+                // 创建弹出对话框
+                const department = prompt('请选择部门 (甲板部/轮机部/其他船员):');
+                if (!department) return;
+
+                const position = prompt('请输入职位:');
+                if (!position) return;
+
+                // 检查是否需要添加部门标题行
+                const lastDepartmentHeader = Array.from(staffTable.querySelectorAll('.department-header')).pop();
+                if (!lastDepartmentHeader || !lastDepartmentHeader.textContent.includes(department)) {
+                    const headerRow = document.createElement('tr');
+                    headerRow.className = 'department-header';
+                    headerRow.innerHTML = `<td colspan="6">${department}</td>`;
+                    staffTable.appendChild(headerRow);
+                }
+
+                // 创建新的人员行
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${position}</td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                    <td>
+                        <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+
+                // 添加删除按钮功能
+                const deleteBtn = newRow.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', function() {
+                    if (confirm('确定要删除这条记录吗？')) {
+                        newRow.remove();
+                    }
+                });
+
+                // 添加编辑按钮功能
+                const editBtn = newRow.querySelector('.edit-btn');
+                editBtn.addEventListener('click', function() {
+                    const cells = newRow.querySelectorAll('td[contenteditable="true"]');
+                    cells.forEach(cell => {
+                        cell.focus();
+                    });
+                });
+
+                // 将新行添加到表格中
+                staffTable.appendChild(newRow);
+            });
+
+            // 为导出按钮添加功能
+            exportBtn.addEventListener('click', function() {
+                let csvContent = "职位,姓名,电话,在班时间,证书编号\n";
+                
+                const rows = staffTable.querySelectorAll('tr:not(.department-header)');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 5) {
+                        const rowData = [
+                            cells[0].textContent,
+                            cells[1].textContent,
+                            cells[2].textContent,
+                            cells[3].textContent,
+                            cells[4].textContent
+                        ].map(text => `"${text}"`).join(',');
+                        csvContent += rowData + '\n';
+                    }
+                });
+
+                // 创建下载链接
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = '在职人员信息表.csv';
+                link.click();
+            });
+
+            // 为现有表格中的删除按钮添加功能
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (confirm('确定要删除这条记录吗？')) {
+                        btn.closest('tr').remove();
+                    }
+                });
+            });
+
+            // 为现有表格中的编辑按钮添加功能
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const row = btn.closest('tr');
+                    const cells = row.querySelectorAll('td[contenteditable="true"]');
+                    cells.forEach(cell => {
+                        cell.focus();
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

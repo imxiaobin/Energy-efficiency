@@ -1,0 +1,5134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能分析</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 从船舶信息管理.html复制所有样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            gap: 11px;
+            padding: 0 11px;
+            box-sizing: border-box;
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 25px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: calc(100vh - 20px);
+            z-index: 1;
+            margin: 10px;
+            margin-right: 0;
+            margin-top: 10px;
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            width: 220px;
+        }
+
+        /* 侧边栏菜单项样式 */
+        .sidebar .menu-item {
+            cursor: pointer;
+        }
+
+        .sidebar .menu-item h2 {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 15px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 为每个菜单项添加图标 */
+        .sidebar .menu-item h2::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 为每个菜单项添加特定图标 */
+        #menuItem0 h2::before {
+            content: "\f54b";  /* 船舶图标 */
+            color: #3498db;
+        }
+
+        #menuItem1 h2::before {
+            content: "\f080";  /* 记录图标 */
+            color: #2ecc71;
+        }
+
+        #menuItem2 h2::before {
+            content: "\f0e4";  /* 检测图标 */
+            color: #e67e22;
+        }
+
+        #menuItem3 h2::before {
+            content: "\f5eb";  /* 决策图标 */
+            color: #e74c3c;
+        }
+
+        #menuItemReportGen h2::before {
+            content: "\f15c";  /* 报告图标 */
+            color: #9b59b6;
+        }
+
+        .sidebar .menu-item li {
+            padding: 10px 15px 10px 45px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            position: relative;
+        }
+
+        .sidebar .menu-item li::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            content: "\f105";
+            position: absolute;
+            left: 25px;
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar .menu-item h2:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .sidebar .menu-item li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        /* 页眉样式 */
+        header {
+            background: linear-gradient(135deg, #e8eef9 0%, #d4e2f9 100%);
+            color: #2c3e50;
+            padding: 10px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            grid-column: 1 / -1;
+        }
+
+        .nav-list {
+            display: flex;
+            list-style: none;
+            margin: 5px;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-item a {
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-item a:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background: linear-gradient(to bottom, #ffffff, #f8fafd);
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin: 10px;
+            margin-left: 20px;
+            min-width: 0;
+            height: calc(100vh - 20px);
+        }
+
+        /* 添加图标悬停效果 */
+        .nav-item a:hover i {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* 菜单展开/折叠动画 */
+        .sidebar .menu-item ul {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .menu-item.active ul {
+            max-height: 500px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 修改菜单项hover效果的过渡动画 */
+        .sidebar .menu-item h2,
+        .sidebar .menu-item li {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 添加导航项的过渡动画 */
+        .nav-item a {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 添加阴影过渡效果 */
+        .sidebar,
+        .main-content,
+        header {
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        /* 添加菜单图标的过渡效果 */
+        .sidebar .menu-item h2::before {
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        /* 当菜单项激活时的图标效果 */
+        .sidebar .menu-item.active h2::before {
+            transform: scale(1.1);
+        }
+
+        .performance-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        /* 修改性能概览卡片样式 */
+        .performance-overview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px; /* 减小卡片间距 */
+            margin-bottom: 6px;
+        }
+
+        /* 修改卡片布局样式 */
+        .overview-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 90px;
+            position: relative;
+        }
+
+        /* 修改标题和图标容器样式 */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .overview-card i {
+            font-size: 1.4rem;
+            color: #3498db;
+        }
+
+        .overview-card h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* 修改内容容器样式 */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 垂直居中 */
+            align-items: center; /* 水平居中 */
+        }
+
+        /* 修改数值容器样式 */
+        .value-container {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 4px;
+            margin: 0;
+        }
+
+        .value-unit {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1;
+        }
+
+        .unit {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        /* 修改趋势显示器样式 */
+        .trend {
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        /* 趋势显示器状态样式 */
+        .trend.up, .trend.positive {
+            color: #2ecc71; /* 增加-绿色 */
+        }
+
+        .trend.down, .trend.negative {
+            color: #e74c3c; /* 降低-红色 */
+        }
+
+        .trend.stable, .trend.normal {
+            color: #3498db; /* 不变-蓝色 */
+        }
+
+        /* 趋势条样式统一 */
+        .trend-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #f5f6fa;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .trend-bar {
+            height: 100%;
+            width: 0;
+            transition: width 1s ease;
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.3), /* 淡蓝色起始 */
+                rgba(52, 152, 219, 0.6)  /* 淡蓝色��束 */
+            );
+        }
+
+        /* ��除之前的不同状态颜色 */
+        .trend-bar.positive,
+        .trend-bar.negative,
+        .trend-bar.normal,
+        .trend-bar.warning {
+            background: linear-gradient(to right, 
+                rgba(52, 152, 219, 0.3),
+                rgba(52, 152, 219, 0.6)
+            );
+        }
+
+        /* 趋势图标样式 */
+        .trend i {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        /* 趋势悬停效果 */
+        .trend:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .trend.up:hover, .trend.positive:hover {
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+
+        .trend.down:hover, .trend.negative:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+
+        .trend.stable:hover, .trend.normal:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        /* 添加趋势条样式 */
+        .trend-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px; /* 减小趋势条高度 */
+            background: #eee;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .trend-bar {
+            height: 100%;
+            width: 0;
+            transition: width 1s ease;
+        }
+
+        .trend-bar.positive {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+        }
+
+        .trend-bar.negative {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+
+        .trend-bar.normal {
+            background: linear-gradient(to right, #3498db, #2980b9);
+        }
+
+        .trend-bar.warning {
+            background: linear-gradient(to right, #f1c40f, #f39c12);
+        }
+
+        /* 电堆选择器样式调整 */
+        .stack-selector-mini {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+        }
+
+        /* 修改选择按钮样式 */
+        .stack-selector-mini .dropdown-btn-mini {
+            background: none;
+            border: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+        }
+
+        /* 修改选择器图标样式 */
+        .stack-selector-mini .dropdown-btn-mini i {
+            font-size: 0.7rem;
+            color: #3498db;
+        }
+
+        /* 修改下拉内容样式 */
+        .stack-selector-mini .dropdown-content-mini {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-width: 80px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* 修改下拉选项样式 */
+        .stack-selector-mini .dropdown-item {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stack-selector-mini .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .stack-selector-mini .dropdown-item.active {
+            color: #3498db;
+            background: none;
+        }
+
+        /* 改电堆功率卡片标题样式 */
+        .overview-card .card-content h3 {
+            font-size: 0.85rem;
+            color: #666;
+            margin-right: 60px; /* 为选择器留出空间 */
+        }
+
+        /* 添加选择器指示点样式 */
+        .stack-indicator {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .stack-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stack-dot.active {
+            background: #3498db;
+            transform: scale(1.2);
+        }
+
+        .charts-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+            min-height: 0;
+        }
+
+        .chart-wrapper {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            height: 100%;
+        }
+
+        .chart-wrapper h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart {
+            height: 300px;
+        }
+
+        .parameters-table {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .parameters-table .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .parameters-table .table-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .parameters-table .table-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .parameters-table.expanded .table-content {
+            max-height: 500px; /* 根据实际内容调整 */
+            transition: max-height 0.5s ease-in;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: #3498db;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .parameters-table.expanded .toggle-btn i {
+            transform: rotate(180deg);
+        }
+
+        .toggle-btn:hover {
+            color: #2980b9;
+        }
+
+        .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+        }
+
+        .action-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .parameters-table h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .parameters-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .parameters-table th,
+        .parameters-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .parameters-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .status.normal {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status.good {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .thermal-cards {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .thermal-overview {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+            overflow: auto;
+        }
+
+        .thermal-card {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .thermal-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .card-header i {
+            font-size: 1.2rem;
+            color: #3498db;
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .main-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .value-trend {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .trend-value {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .trend-indicator {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .trend-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .trend-bar.normal {
+            background: #3498db;
+        }
+
+        .trend-bar.warning {
+            background: #f1c40f;
+        }
+
+        .trend-bar.good {
+            background: #2ecc71;
+        }
+
+        .reference-value {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .expand-btn {
+            margin-left: auto;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .floating-charts {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #ffffff, #f8fafd);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            z-index: 1001; /* 提高z-index确保在最上层 */
+            padding: 25px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .floating-charts.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 修改图表网格布局 */
+        .charts-grid {
+            height: calc(100% - 70px);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            padding: 10px;
+        }
+
+        /* 修改单个图表容器样 */
+        .mini-chart {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .mini-chart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .mini-chart h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mini-chart h4::before {
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+        }
+
+        /* 为每个图表添加特定图标 */
+        .mini-chart:nth-child(1) h4::before {
+            content: "\f2c7";  /* 温度图标 */
+            color: #e74c3c;
+        }
+
+        .mini-chart:nth-child(2) h4::before {
+            content: "\f2c9";  /* 温度图标 */
+            color: #e67e22;
+        }
+
+        .mini-chart:nth-child(3) h4::before {
+            content: "\f043";  /* 水滴图标 */
+            color: #3498db;
+        }
+
+        .mini-chart:nth-child(4) h4::before {
+            content: "\f72e";  /* 风扇图标 */
+            color: #2ecc71;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        /* 优化图表标题样式 */
+        .charts-header {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .charts-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .charts-header h3 i {
+            color: #3498db;
+        }
+
+        /* 修改关闭按钮样式 */
+        .close-icon {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .close-icon:hover {
+            background: #e74c3c;
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* 修改遮罩层样式 */
+        .overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(2px);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 12px;
+        }
+
+        .overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .fuel-overview {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+            overflow: auto;
+        }
+
+        .fuel-card {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .fuel-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stack-selector {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            margin-right: 15px;
+        }
+
+        .stack-btn {
+            padding: 5px 12px;
+            border: 2px solid #3498db;
+            background: transparent;
+            color: #3498db;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .stack-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stack-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 修改标题布局 */
+        .chart-wrapper h3 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stack-selector {
+            margin-left: auto;
+            margin-right: 15px;
+            position: relative;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
+            padding: 6px 15px;
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            color: #3498db;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .dropdown-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-btn i {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 1002; /* 确保下拉菜单在最上层 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+            animation: dropdownFadeIn 0.2s ease;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        @keyframes dropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 修改标题布局样式 */
+        .chart-wrapper h3 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        /* 统一下拉选择器样式 */
+        .stack-selector,
+        .tank-selector {
+            margin-left: auto;
+            margin-right: 15px;
+            position: relative;
+        }
+
+        /* 优化下拉按钮样式 */
+        .dropdown-btn {
+            padding: 6px 15px;
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            color: #3498db;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .dropdown-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-btn i {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 1002; /* 确保下拉菜单在最上层 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+            animation: dropdownFadeIn 0.2s ease;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* 优化下拉选项样式 */
+        .dropdown-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .dropdown-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 图��图标位置调整 */
+        .chart-icon {
+            margin-left: 0;
+        }
+
+        /* 修改卡片内���布局 */
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .value-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .value-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .main-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+
+        .trend-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .trend-value i {
+            font-size: 0.9rem;
+        }
+
+        .trend-value.up {
+            color: #2ecc71;
+        }
+
+        .trend-value.down {
+            color: #e74c3c;
+        }
+
+        .trend-container {
+            width: 100%;
+        }
+
+        .trend-indicator {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .trend-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        /* 在现有样式表中添加或修改以下样式 */
+        .parameters-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            padding: 25px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .parameters-modal.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: #e74c3c;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+        }
+
+        .parameters-table .table-content {
+            display: none;
+        }
+
+        .parameters-modal .table-content {
+            display: block;
+        }
+
+        .modal-actions {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-btn.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .modal-btn.secondary {
+            background: #f1f2f6;
+            color: #2c3e50;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #e8e9ec;
+            transform: translateY(-2px);
+        }
+
+        /* 添加或修改以下样式 */
+        .modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin: 15px 0;
+        }
+
+        .modal-section {
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-header h4 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 调整下拉菜单在模态框中的样式 */
+        .modal-section .dropdown-btn {
+            background: white;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        /* 美化滚动条 */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 添加列表视图相关样式 */
+        .list-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-actions .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border: none;
+            color: #2c3e50;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .header-actions .action-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .trend.up {
+            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .trend.down {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-btn,
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background: #f1f2f6;
+            color: #3498db;
+        }
+
+        .delete-btn {
+            background: #f1f2f6;
+            color: #e74c3c;
+        }
+
+        .edit-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .delete-btn:hover {
+            background: #e74c3c;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* 编辑模式样式 */
+        .editing td input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .editing .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .save-btn,
+        .cancel-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        /* 修改卡片内容布局 */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .card-content h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .value-container {
+            display: flex;
+            align-items: baseline; /* 改为baseline对齐以更好地对齐数字和单位 */
+            justify-content: center;
+            gap: 4px; /* 减小数值和单位之间的间距 */
+            margin-bottom: 8px;
+        }
+
+        .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .trend {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: auto; /* 将趋势值推到右侧 */
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 趋势显示器不同状态的样式 */
+        .trend.positive {
+            color: #2ecc71;
+        }
+
+        .trend.negative {
+            color: #e74c3c;
+        }
+
+        .trend.normal {
+            color: #3498db;
+        }
+
+        .trend.warning {
+            color: #f1c40f;
+        }
+
+        .trend i {
+            font-size: 0.8rem;
+        }
+
+        /* 为趋势添加悬停效果 */
+        .trend:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .trend.positive:hover {
+            background: rgba(46, 204, 113, 0.15);
+        }
+
+        .trend.negative:hover {
+            background: rgba(231, 76, 60, 0.15);
+        }
+
+        .trend.normal:hover {
+            background: rgba(52, 152, 219, 0.15);
+        }
+
+        .trend.warning:hover {
+            background: rgba(241, 196, 15, 0.15);
+        }
+
+        /* 修改卡片标题样式 */
+        .overview-card h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        /* 修改数值显示样式 */
+        .value-container {
+            display: flex;
+            align-items: baseline; /* 改为baseline对齐以更好地对齐数字和单位 */
+            justify-content: center;
+            gap: 4px; /* 减小数值和单位之间的间距 */
+            margin-bottom: 8px;
+        }
+
+        /* 修改单位文本样式 */
+        .value-container span:not(.trend) {
+            font-size: 1.2rem; /* 增大单位字体 */
+            font-weight: 500; /* 增加字重 */
+            color: #2c3e50;
+            margin-top: 0; /* 移除顶部间距 */
+        }
+
+        /* 修改趋势显示样式 */
+        .trend {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: auto; /* 将趋势值推到右侧 */
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 电堆选择器mini版样式 */
+        .stack-selector-mini {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 2;
+        }
+
+        .dropdown-btn-mini {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-btn-mini:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-content-mini {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .dropdown-content-mini .dropdown-item {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-content-mini .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .dropdown-content-mini .dropdown-item.active {
+            color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        /* 确保卡片内容可以正确定位选择器 */
+        .overview-card .card-content {
+            position: relative;
+        }
+    </style>
+
+    <!-- 在body标签内添加模态框结构 -->
+    <div class="modal-overlay"></div>
+    <div class="parameters-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-list-alt"></i> 燃料电池关键指标</h3>
+            <!-- 确保关闭按钮存在且有正确的类名和点击事件 -->
+            <button class="modal-close" onclick="closeParametersModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <div class="list-section">
+                <div class="section-header">
+                    <h4><i class="fas fa-thermometer-half"></i> 热管理系统监控</h4>
+                    <div class="header-actions">
+                        <button class="action-btn" onclick="importData('thermal')">
+                            <i class="fas fa-file-import"></i> 导入
+                        </button>
+                        <button class="action-btn" onclick="exportData('thermal')">
+                            <i class="fas fa-file-export"></i> 导出
+                        </button>
+                    </div>
+                </div>
+                <div class="list-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>参数名称</th>
+                                <th>当前值</th>
+                                <th>变化趋势</th>
+                                <th>目标范围</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 热管理系统参数 -->
+                            <tr>
+                                <td>进水温度</td>
+                                <td>65.2 °C</td>
+                                <td>
+                                    <span class="trend up">
+                                        <i class="fas fa-arrow-up"></i> 0.3 °C
+                                    </span>
+                                </td>
+                                <td>60-70 °C</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>出水温度</td>
+                                <td>68.5 °C</td>
+                                <td>
+                                    <span class="trend up">
+                                        <i class="fas fa-arrow-up"></i> 0.5 °C
+                                    </span>
+                                </td>
+                                <td>≤75 °C</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>冷却水流量</td>
+                                <td>180 L/min</td>
+                                <td>
+                                    <span class="trend up">
+                                        <i class="fas fa-arrow-up"></i> 5 L/min
+                                    </span>
+                                </td>
+                                <td>≥150 L/min</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>散热器风扇转速</td>
+                                <td>1200 RPM</td>
+                                <td>
+                                    <span class="trend down">
+                                        <i class="fas fa-arrow-down"></i> 50 RPM
+                                    </span>
+                                </td>
+                                <td>800-1500 RPM</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="list-section">
+                <div class="section-header">
+                    <h4><i class="fas fa-flask"></i> 燃料指标监控</h4>
+                    <div class="header-actions">
+                        <button class="action-btn" onclick="importData('fuel')">
+                            <i class="fas fa-file-import"></i> 导入
+                        </button>
+                        <button class="action-btn" onclick="exportData('fuel')">
+                            <i class="fas fa-file-export"></i> 导出
+                        </button>
+                    </div>
+                </div>
+                <div class="list-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>参数名称</th>
+                                <th>当前值</th>
+                                <th>变化趋势</th>
+                                <th>目标范围</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>氢气输送压力</td>
+                                <td>0.15 MPa</td>
+                                <td>
+                                    <span class="trend up">
+                                        <i class="fas fa-arrow-up"></i> 0.01 MPa
+                                    </span>
+                                </td>
+                                <td>0.1-0.2 MPa</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>氢气输送流量</td>
+                                <td>60 L/min</td>
+                                <td>
+                                    <span class="trend up">
+                                        <i class="fas fa-arrow-up"></i> 2 L/min
+                                    </span>
+                                </td>
+                                <td>40-80 L/min</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>氢气纯度</td>
+                                <td>99.99%</td>
+                                <td>
+                                    <span class="trend normal">
+                                        <i class="fas fa-check"></i> 稳定
+                                    </span>
+                                </td>
+                                <td>≥99.95%</td>
+                                <td><span class="status good">优良</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>空气量系数</td>
+                                <td>2.0</td>
+                                <td>
+                                    <span class="trend down">
+                                        <i class="fas fa-arrow-down"></i> 0.1
+                                    </span>
+                                </td>
+                                <td>1.8-2.2</td>
+                                <td><span class="status normal">正常</span></td>
+                                <td class="actions">
+                                    <button class="edit-btn" onclick="editRow(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn secondary" onclick="refreshModalData()">
+                <i class="fas fa-sync-alt"></i>
+                刷新表格数据
+            </button>
+            <button class="modal-btn primary" onclick="exportModalData()">
+                <i class="fas fa-download"></i>
+                导出数据
+            </button>
+        </div>
+    </div>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="menu-item" id="menuItem0">
+            <h2>船舶管理</h2>
+            <ul id="menu0">
+                <li onclick="window.location.href='船舶信息管理.html'">船舶信息</li>
+            </ul>
+        </div>
+
+        <div class="menu-item" id="menuItem1">
+            <h2>信息记录</h2>
+            <ul id="menu1">
+                <li onclick="window.location.href='日报记录.html'">日报记录</li>
+                <li onclick="window.location.href='航次记录.html'">航次记录</li>
+                <li onclick="window.location.href='储氢罐记录.html'">储氢罐记录</li>
+                <li onclick="window.location.href='加氢记录.html'">加氢记录</li>
+                <li onclick="window.location.href='在线监测记录.html'">在线监测记录</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem2">
+            <h2>能效分析</h2>
+            <ul id="menu2">
+                <li onclick="window.location.href='能耗统计.html'">能耗统计</li>
+                <li onclick="window.location.href='性能分析.html'">性能分析</li>
+                <li onclick="window.location.href='能效计算器.html'">能效计算器</li>
+                <li onclick="window.location.href='能效提升预测.html'">能效提升预测</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItem3">
+            <h2>报表管理</h2>
+            <ul id="menu3">
+                <li onclick="window.location.href='能耗记录表.html'">能耗记录表</li>
+                <li onclick="window.location.href='能效管理计划.html'">能效管理计划</li>
+                <li onclick="window.location.href='自定义报表.html'">自定义报表</li>
+            </ul>
+        </div>
+        
+        <div class="menu-item" id="menuItemReportGen">
+            <h2>在职人员管理</h2>
+            <ul id="reportGen">
+                <li onclick="window.location.href='在职人员信息.html'">在职人员信息</li>
+                <li onclick="window.location.href='当值记录表.html'">当值记录表</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 页眉 -->
+        <header>
+            <div class="header-content">
+                <nav class="navbar">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" title="首页">
+                                <i class="fas fa-home"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="数据分析">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="设置">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" title="用户">
+                                <i class="fas fa-user"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- 添加性能分析内容 -->
+        <div class="performance-container">
+            <!-- 性能概览卡片 -->
+            <div class="performance-overview">
+                <!-- 第一个卡片保持不变 -->
+                <div class="overview-card">
+                    <div class="card-header">
+                        <i class="fas fa-gas-pump"></i>
+                        <h2>全船氢耗</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="value-container">
+                            <div class="value-unit">
+                                <span class="value">2.5</span>
+                                <span class="unit">kg/h</span>
+                            </div>
+                            <span class="trend positive">
+                                <i class="fas fa-arrow-up"></i>
+                                0.2
+                            </span>
+                        </div>
+                    </div>
+                    <div class="trend-bar-container">
+                        <div class="trend-bar positive" style="width: 75%"></div>
+                    </div>
+                </div>
+                
+                <!-- 修改第二个卡片 -->
+                <div class="overview-card">
+                    <i class="fas fa-percentage"></i>
+                    <div class="card-content">
+                        <h2>氢气利用率</h2>
+                        <div class="value-container">
+                            <div class="value-unit">
+                                <span class="value">95.3</span>
+                                <span class="unit">%</span>
+                            </div>
+                            <span class="trend positive">
+                                <i class="fas fa-arrow-up"></i>
+                                1.2
+                            </span>
+                        </div>
+                    </div>
+                    <div class="trend-bar-container">
+                        <div class="trend-bar positive" style="width: 85%"></div>
+                    </div>
+                </div>
+                
+                <!-- 修改第三个卡片 -->
+                <div class="overview-card">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <div class="card-content">
+                        <h2>驱动电机功率</h2>
+                        <div class="value-container">
+                            <div class="value-unit">
+                                <span class="value">180</span>
+                                <span class="unit">kW</span>
+                            </div>
+                            <span class="trend normal">
+                                <i class="fas fa-tachometer-alt"></i>
+                                1500 RPM
+                            </span>
+                        </div>
+                    </div>
+                    <div class="trend-bar-container">
+                        <div class="trend-bar normal" style="width: 70%"></div>
+                    </div>
+                </div>
+                
+                <!-- 修改第四个卡片 -->
+                <div class="overview-card">
+                    <i class="fas fa-bolt"></i>
+                    <div class="card-content">
+                        <h2>电堆功率</h2>
+                        <div class="stack-selector-mini">
+                            <button class="dropdown-btn-mini">
+                                <span class="selected-stack">A组电堆</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-content-mini">
+                                <div class="dropdown-item active" data-stack="1">A组电堆</div>
+                                <div class="dropdown-item" data-stack="2">B组电堆</div>
+                            </div>
+                        </div>
+                        <div class="value-container">
+                            <div class="value-unit">
+                                <span class="value">120</span>
+                                <span class="unit">kW</span>
+                            </div>
+                            <span class="trend positive">
+                                <i class="fas fa-arrow-up"></i>
+                                5
+                            </span>
+                        </div>
+                    </div>
+                    <div class="trend-bar-container">
+                        <div class="trend-bar positive" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表区域 -->
+            <div class="charts-container">
+                <!-- 热管理系统分析 -->
+                <div class="chart-wrapper thermal-cards">
+                    <h3>
+                        <i class="fas fa-thermometer-half"></i> 
+                        电堆热管理系统监控
+                        <div class="stack-selector">
+                            <div class="dropdown">
+                                <button class="dropdown-btn">
+                                    <span class="selected-stack">A组电堆</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-content">
+                                    <div class="dropdown-item active" data-stack="1">A组电堆</div>
+                                    <div class="dropdown-item" data-stack="2">B组电堆</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-icon" onclick="toggleThermalCharts()">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </h3>
+                    <div class="thermal-overview">
+                        <div class="thermal-card">
+                            <div class="card-header">
+                                <i class="fas fa-temperature-low"></i>
+                                <span>进水温度</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">65.2 °C</div>
+                                        <div class="trend-value">
+                                            <i class="fas fa-arrow-up"></i>
+                                            0.3 °C
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar normal" style="width: 80%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: 60-70 °C</div>
+                            </div>
+                        </div>
+
+                        <div class="thermal-card">
+                            <div class="card-header">
+                                <i class="fas fa-temperature-high"></i>
+                                <span>出水温度</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">68.5 °C</div>
+                                        <div class="trend-value up">
+                                            <i class="fas fa-arrow-up"></i>
+                                            0.5 °C
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar warning" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: ≤75 °C</div>
+                            </div>
+                        </div>
+
+                        <div class="thermal-card">
+                            <div class="card-header">
+                                <i class="fas fa-tint"></i>
+                                <span>冷却水流量</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">180 L/min</div>
+                                        <div class="trend-value up">
+                                            <i class="fas fa-arrow-up"></i>
+                                            5 L/min
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar good" style="width: 90%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: ≥150 L/min</div>
+                            </div>
+                        </div>
+
+                        <div class="thermal-card">
+                            <div class="card-header">
+                                <i class="fas fa-wind"></i>
+                                <span>散热器风扇转速</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">1200 RPM</div>
+                                        <div class="trend-value down">
+                                            <i class="fas fa-arrow-down"></i>
+                                            50 RPM
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar normal" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: 800-1500 RPM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 燃料指标卡片 -->
+                <div class="chart-wrapper">
+                    <h3>
+                        <i class="fas fa-flask"></i> 燃料指标
+                        <div class="tank-selector">
+                            <div class="dropdown">
+                                <button class="dropdown-btn">
+                                    <span class="selected-tank">储氢罐 #1</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-content">
+                                    <div class="dropdown-item active" data-tank="1">储氢罐 #1</div>
+                                    <div class="dropdown-item" data-tank="2">储氢罐 #2</div>
+                                    <div class="dropdown-item" data-tank="3">储氢罐 #3</div>
+                                    <div class="dropdown-item" data-tank="4">储氢罐 #4</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-icon" onclick="toggleFuelCharts()">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </h3>
+                    <div class="fuel-overview">
+                        <div class="fuel-card">
+                            <div class="card-header">
+                                <i class="fas fa-compress-arrows-alt"></i>
+                                <span>氢气输送力</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">0.15 MPa</div>
+                                        <div class="trend-value up">
+                                            <i class="fas fa-arrow-up"></i>
+                                            0.01 MPa
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar normal" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: 0.1-0.2 MPa</div>
+                            </div>
+                        </div>
+
+                        <div class="fuel-card">
+                            <div class="card-header">
+                                <i class="fas fa-wind"></i>
+                                <span>氢气输送流量</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">60 L/min</div>
+                                        <div class="trend-value up">
+                                            <i class="fas fa-arrow-up"></i>
+                                            2 L/min
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar good" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: 40-80 L/min</div>
+                            </div>
+                        </div>
+
+                        <div class="fuel-card">
+                            <div class="card-header">
+                                <i class="fas fa-filter"></i>
+                                <span>氢气纯度</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">99.99%</div>
+                                        <div class="trend-value stable">
+                                            <i class="fas fa-check"></i>
+                                            稳定
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar good" style="width: 95%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: ≥99.95%</div>
+                            </div>
+                        </div>
+
+                        <div class="fuel-card">
+                            <div class="card-header">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>空气量系数</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="value-container">
+                                    <div class="value-row">
+                                        <div class="main-value">2.0</div>
+                                        <div class="trend-value down">
+                                            <i class="fas fa-arrow-down"></i>
+                                            0.1
+                                        </div>
+                                    </div>
+                                    <div class="trend-container">
+                                        <div class="trend-indicator">
+                                            <div class="trend-bar normal" style="width: 80%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reference-value">目标范围: 1.8-2.2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 性能参数表格 -->
+            <div class="parameters-table">
+                <div class="table-header">
+                    <h3><i class="fas fa-list-alt"></i> 燃料电池关键指标</h3>
+                    <div class="table-actions">
+                        <!-- 添加打开模态框的按钮 -->
+                        <button class="action-btn" onclick="openParametersModal()">
+                            <i class="fas fa-expand-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-content">
+                    <table>
+                        <!-- 保持原有的表内容不变 -->
+                        <thead>
+                            <tr>
+                                <th>参数名称</th>
+                                <th>当前值</th>
+                                <th>标准范围</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 原有的表行内容 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 菜单展开/折叠功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                const title = item.querySelector('h2');
+                if (title) {
+                    title.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const menuId = item.querySelector('ul')?.id;
+                        if (menuId) {
+                            toggleMenuItem(menuId);
+                        }
+                    });
+                }
+            });
+        });
+
+        function toggleMenuItem(menuId) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const targetMenuItem = document.getElementById(menuId).closest('.menu-item');
+            
+            if (targetMenuItem.classList.contains('active')) {
+                targetMenuItem.classList.remove('active');
+                const subMenu = targetMenuItem.querySelector('ul');
+                if (subMenu) {
+                    subMenu.style.maxHeight = '0';
+                }
+                return;
+            }
+            
+            menuItems.forEach(item => {
+                if (item !== targetMenuItem) {
+                    item.classList.remove('active');
+                    const subMenu = item.querySelector('ul');
+                    if (subMenu) {
+                        subMenu.style.maxHeight = '0';
+                    }
+                }
+            });
+            
+            targetMenuItem.classList.add('active');
+            const subMenu = targetMenuItem.querySelector('ul');
+            if (subMenu) {
+                subMenu.style.maxHeight = subMenu.scrollHeight + 'px';
+            }
+        }
+    </script>
+
+    <!-- 添加图表初始化和更新的脚本 -->
+    <script>
+        // 初始化图表
+        let thermalChart = echarts.init(document.getElementById('thermal-chart'));
+        let hydrogenChart = echarts.init(document.getElementById('hydrogen-chart'));
+
+        // 热管理系统图表配置
+        const thermalOption = {
+            title: {
+                text: '热管理系统监控',
+                subtext: '温度与流量实时监测'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                }
+            },
+            legend: {
+                data: ['进水温度', '出水温度', '冷却水流量']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'time',
+                boundaryGap: false
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '度(°C)',
+                    position: 'left'
+                },
+                {
+                    type: 'value',
+                    name: '流量(L/min)',
+                    position: 'right'
+                }
+            ],
+            series: [
+                {
+                    name: '进水温度',
+                    type: 'line',
+                    smooth: true,
+                    data: []
+                },
+                {
+                    name: '出水温度',
+                    type: 'line',
+                    smooth: true,
+                    data: []
+                },
+                {
+                    name: '冷水流量',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    data: []
+                }
+            ]
+        };
+
+        // 氢气系统性图表配置
+        const hydrogenOption = {
+            title: {
+                text: '氢气系统性能',
+                subtext: '氢气利用与产水监测'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                }
+            },
+            legend: {
+                data: ['氢气利用率', '产水量', '氢气压力']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'time',
+                boundaryGap: false
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '利用率(%)',
+                    min: 80,
+                    max: 100,
+                    position: 'left'
+                },
+                {
+                    type: 'value',
+                    name: '产水量(L/h)',
+                    position: 'right'
+                }
+            ],
+            series: [
+                {
+                    name: '氢气利用率',
+                    type: 'line',
+                    smooth: true,
+                    data: []
+                },
+                {
+                    name: '产水量',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    data: []
+                },
+                {
+                    name: '氢气压力',
+                    type: 'line',
+                    smooth: true,
+                    data: []
+                }
+            ]
+        };
+
+        // 设置图表配置
+        thermalChart.setOption(thermalOption);
+        hydrogenChart.setOption(hydrogenOption);
+
+        // 更新函数
+        function updateCharts() {
+            const now = new Date();
+            
+            // 新热管理数据
+            const inletTemp = 65 + Math.random() * 2;
+            const outletTemp = inletTemp + 3 + Math.random();
+            const coolantFlow = 180 + Math.random() * 10;
+            
+            // 更新氢气统数据
+            const h2Utilization = 95 + Math.random() * 1;
+            const waterProduction = 18 + Math.random() * 2;
+            const h2Pressure = 0.15 + Math.random() * 0.02;
+
+            // 添加新数据点
+            thermalOption.series[0].data.push([now, inletTemp]);
+            thermalOption.series[1].data.push([now, outletTemp]);
+            thermalOption.series[2].data.push([now, coolantFlow]);
+
+            hydrogenOption.series[0].data.push([now, h2Utilization]);
+            hydrogenOption.series[1].data.push([now, waterProduction]);
+            hydrogenOption.series[2].data.push([now, h2Pressure]);
+
+            // 保持最近30个数据点
+            thermalOption.series.forEach(series => {
+                if (series.data.length > 30) series.data.shift();
+            });
+
+            hydrogenOption.series.forEach(series => {
+                if (series.data.length > 30) series.data.shift();
+            });
+
+            // 更新图表
+            thermalChart.setOption(thermalOption);
+            hydrogenChart.setOption(hydrogenOption);
+        }
+
+        // 每2秒更新一次数据
+        setInterval(updateCharts, 2000);
+
+        // 窗口大小改变时自动调整图表大小
+        window.addEventListener('resize', function() {
+            thermalChart.resize();
+            hydrogenChart.resize();
+        });
+    </script>
+
+    <script>
+        function updateThermalCards() {
+            // 更新进水温度
+            const inletTemp = 65 + Math.random() * 2;
+            const inletTrend = Math.random() > 0.5 ? 'up' : 'down';
+            document.querySelector('.thermal-card:nth-child(1) .main-value').textContent = 
+                `${inletTemp.toFixed(1)} °C`;
+            document.querySelector('.thermal-card:nth-child(1) .trend-value').textContent = 
+                `${inletTrend} ${(Math.random() * 0.5).toFixed(1)} °C`;
+
+            // 更新出水温度
+            const outletTemp = inletTemp + 3 + Math.random();
+            const outletTrend = Math.random() > 0.5 ? 'up' : 'down';
+            document.querySelector('.thermal-card:nth-child(2) .main-value').textContent = 
+                `${outletTemp.toFixed(1)} °C`;
+            document.querySelector('.thermal-card:nth-child(2) .trend-value').textContent = 
+                `${outletTrend} ${(Math.random() * 0.5).toFixed(1)} °C`;
+
+            // 更新冷却水流量
+            const flowRate = 180 + Math.random() * 10;
+            const flowTrend = Math.random() > 0.5 ? 'up' : 'down';
+            document.querySelector('.thermal-card:nth-child(3) .main-value').textContent = 
+                `${flowRate.toFixed(0)} L/min`;
+            document.querySelector('.thermal-card:nth-child(3) .trend-value').textContent = 
+                `${flowTrend} ${(Math.random() * 5).toFixed(0)} L/min`;
+
+            // 更新风扇转速
+            const fanSpeed = 1200 + Math.random() * 100 - 50;
+            const fanTrend = Math.random() > 0.5 ? 'up' : 'down';
+            document.querySelector('.thermal-card:nth-child(4) .main-value').textContent = 
+                `${fanSpeed.toFixed(0)} RPM`;
+            document.querySelector('.thermal-card:nth-child(4) .trend-value').textContent = 
+                `${fanTrend} ${(Math.random() * 50).toFixed(0)} RPM`;
+        }
+
+        // 每2秒更新一次数据
+        setInterval(updateThermalCards, 2000);
+    </script>
+
+    <!-- 初始化四个小图表 -->
+    <script>
+        let miniCharts = {
+            inletTemp: null,
+            outletTemp: null,
+            flowRate: null,
+            fanSpeed: null
+        };
+
+        function initMiniCharts() {
+            // 清除现有图表
+            Object.keys(miniCharts).forEach(key => {
+                if (miniCharts[key]) {
+                    miniCharts[key].dispose();
+                    miniCharts[key] = null;
+                }
+            });
+
+            const chartElements = {
+                inletTemp: document.getElementById('inletTempChart'),
+                outletTemp: document.getElementById('outletTempChart'),
+                flowRate: document.getElementById('flowRateChart'),
+                fanSpeed: document.getElementById('fanSpeedChart')
+            };
+
+            // 确保所有DOM元素都存在
+            if (Object.values(chartElements).some(el => !el)) {
+                console.error('Some chart containers are missing');
+                return false;
+            };
+
+            // 初始化图表
+            Object.entries(chartElements).forEach(([key, element]) => {
+                miniCharts[key] = echarts.init(element);
+                const option = getChartOption(key);
+                miniCharts[key].setOption(option);
+            });
+
+            return true;
+        }
+
+        function getChartOption(chartType) {
+            const baseOption = {
+                grid: {
+                    top: 30,
+                    right: 20,
+                    bottom: 30,
+                    left: 50,
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        return `${params[0].name}<br/>${params[0].value[1].toFixed(2)}`;
+                    }
+                },
+                xAxis: {
+                    type: 'time',
+                    splitLine: { show: false }
+                },
+                animation: true
+            };
+
+            const chartConfigs = {
+                inletTemp: {
+                    name: '进水温度',
+                    unit: '°C',
+                    min: 55,
+                    max: 75,
+                    color: '#3498db'
+                },
+                outletTemp: {
+                    name: '出水温度',
+                    unit: '°C',
+                    min: 60,
+                    max: 80,
+                    color: '#e74c3c'
+                },
+                flowRate: {
+                    name: '冷却水流量',
+                    unit: 'L/min',
+                    min: 140,
+                    max: 220,
+                    color: '#2ecc71'
+                },
+                fanSpeed: {
+                    name: '风扇转速',
+                    unit: 'RPM',
+                    min: 800,
+                    max: 1600,
+                    color: '#9b59b6'
+                }
+            };
+
+            const config = chartConfigs[chartType];
+            return {
+                ...baseOption,
+                yAxis: {
+                    type: 'value',
+                    name: `${config.name}(${config.unit})`,
+                    min: config.min,
+                    max: config.max
+                },
+                series: [{
+                    name: config.name,
+                    type: 'line',
+                    smooth: true,
+                    data: [],
+                    itemStyle: { color: config.color },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                            offset: 0,
+                            color: config.color + '40'
+                        }, {
+                            offset: 1,
+                            color: config.color + '10'
+                        }])
+                    }
+                }]
+            };
+        }
+
+        // 修改图表显示函数
+        function toggleThermalCharts() {
+            const wrapper = document.querySelector('.thermal-cards');
+            const panel = document.getElementById('thermalChartsPanel');
+            const overlay = wrapper.querySelector('.overlay');
+            
+            if (!panel.classList.contains('active')) {
+                panel.classList.add('active');
+                overlay.classList.add('active');
+                
+                // 延迟初始化图表
+                setTimeout(() => {
+                    if (initMiniCharts()) {
+                        updateMiniCharts();
+                        // 调整图表大小
+                        Object.values(miniCharts).forEach(chart => {
+                            if (chart) {
+                                chart.resize();
+                            }
+                        });
+                        if (!window.miniChartsInterval) {
+                            window.miniChartsInterval = setInterval(updateMiniCharts, 2000);
+                        }
+                    }
+                }, 300);
+            } else {
+                closeCharts();
+            }
+        }
+
+        // 修改关闭图表函数
+        function closeCharts() {
+            const wrapper = document.querySelector('.thermal-cards');
+            const panel = document.getElementById('thermalChartsPanel');
+            const overlay = wrapper.querySelector('.overlay');
+            
+            panel.classList.remove('active');
+            overlay.classList.remove('active');
+            
+            if (window.miniChartsInterval) {
+                clearInterval(window.miniChartsInterval);
+                window.miniChartsInterval = null;
+            }
+        }
+
+        // 确保在页面加载完成后添加事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.querySelector('.overlay');
+            const closeIcon = document.querySelector('.close-icon');
+            
+            if (overlay) {
+                overlay.addEventListener('click', closeCharts);
+            }
+            if (closeIcon) {
+                closeIcon.addEventListener('click', closeCharts);
+            }
+
+            // 添加ESC键关闭功能
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeCharts();
+                }
+            });
+        });
+    </script>
+
+    <!-- 添加遮罩层 -->
+    <div class="overlay" onclick="toggleThermalCharts()"></div>
+
+    <!-- 在body标签内，main-content div的后面添加浮动图表面板 -->
+    <div class="floating-charts" id="thermalChartsPanel">
+        <div class="charts-header">
+            <h3>热管理系统实时趋势</h3>
+            <div class="close-icon" onclick="toggleThermalCharts()">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <div class="charts-grid">
+            <div class="mini-chart">
+                <h4>进水温度趋势</h4>
+                <div id="inletTempChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>出水温度趋势</h4>
+                <div id="outletTempChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>冷却水流量趋势</h4>
+                <div id="flowRateChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>风扇转速趋势</h4>
+                <div id="fanSpeedChart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加遮罩层 -->
+    <div class="overlay" onclick="toggleThermalCharts()"></div>
+
+    <!-- 修改样式，确保浮动图表面板和遮罩层在最顶层 -->
+    <style>
+        .floating-charts {
+            /* 隐藏浮动图表 */
+            display: none;
+            /* 固定定位 */
+            position: fixed;
+            /* 距离顶部50% */
+            top: 50%;
+            /* 距离左侧50% */
+            left: 50%;
+            /* 水平垂直居中 */
+            transform: translate(-50%, -50%);
+            /* 宽度为90% */
+            width: 85%;
+            /* 最大宽度为1400px */
+            max-width: 1400px;
+            /* 高度为视口高度的85% */
+            height: 85vh;
+            /* 背景颜色为白色 */
+            background: white;
+            /* 边框圆角为15px */
+            border-radius: 15px;
+            /* 阴影效果 */
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+            /* z-index为1000 */
+            z-index: 1000;
+            /* 内边距为20px */
+            padding: 25px;
+        }
+
+        .floating-charts.active {
+            display: block;
+        }
+
+        .charts-header {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .charts-header h3 {
+            margin: 0;
+            padding-right: 40px; /* 为关闭按钮留出空间 */
+        }
+
+        .close-icon {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .charts-grid {
+            height: calc(100% - 50px); /* 减小与标题的间距 */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 设置两列，每列宽度相等 */
+            grid-template-rows: repeat(2, 1fr); /* 设置两行，每行高度相等 */
+            gap: 15px; /* 设置网格间距为15px */
+        }
+
+        .mini-chart {
+            /* 设置背景颜色为#f8f9fa */
+            background: #f8f9fa;
+            /* 设置边框圆角为10px */
+            border-radius: 10px;
+            /* 设置内边距为15px */
+            padding: 10px;
+            /* 设置为弹性布局，垂直方向排列 */
+            display: flex;
+            flex-direction: column;
+            /* 设置高度为100% */
+            height: 100%;
+        }
+
+        .chart-container {
+            flex: 1;
+            width: 100%;
+            height: calc(100% - 30px); /* 减去标题高度 */
+        }
+
+        .mini-chart h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 替换原有的expand-btn样式为chart-icon样式 */
+        .chart-icon {
+            margin-left: auto;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-icon i {
+            color: white;
+            font-size: 1rem;
+        }
+
+        .chart-icon:hover {
+            background: #2980b9;
+            transform: scale(1.1);
+        }
+
+        .close-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-icon i {
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .close-icon:hover {
+            background: #e74c3c;
+            transform: scale(1.1);
+        }
+
+        .close-icon:hover i {
+            color: white;
+        }
+
+        .fuel-overview {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+            overflow: auto;
+        }
+
+        .fuel-card {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .fuel-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stack-selector {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            margin-right: 15px;
+        }
+
+        .stack-btn {
+            padding: 5px 12px;
+            border: 2px solid #3498db;
+            background: transparent;
+            color: #3498db;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .stack-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stack-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 修改标题布局 */
+        .chart-wrapper h3 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stack-selector {
+            margin-left: auto;
+            margin-right: 15px;
+            position: relative;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
+            padding: 6px 15px;
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            color: #3498db;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .dropdown-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-btn i {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 1002; /* 确保下拉菜单在最上层 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+            animation: dropdownFadeIn 0.2s ease;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        @keyframes dropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 修改标题布局样式 */
+        .chart-wrapper h3 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        /* 统一下拉选择器样式 */
+        .stack-selector,
+        .tank-selector {
+            margin-left: auto;
+            margin-right: 15px;
+            position: relative;
+        }
+
+        /* 优化下拉按钮样式 */
+        .dropdown-btn {
+            padding: 6px 15px;
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            color: #3498db;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .dropdown-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-btn i {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 1002; /* 确保下拉菜单在最上层 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+            animation: dropdownFadeIn 0.2s ease;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* 优化下拉选项样式 */
+        .dropdown-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .dropdown-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 图图标位置调整 */
+        .chart-icon {
+            margin-left: 0;
+        }
+
+        /* 修改卡片内部布局 */
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .value-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .value-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .main-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+
+        .trend-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .trend-value i {
+            font-size: 0.9rem;
+        }
+
+        .trend-value.up {
+            color: #2ecc71;
+        }
+
+        .trend-value.down {
+            color: #e74c3c;
+        }
+
+        .trend-container {
+            width: 100%;
+        }
+
+        .trend-indicator {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .trend-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        /* 在现有样式表中添加或修改以下样式 */
+        .parameters-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            padding: 25px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .parameters-modal.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f1f2f6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: #e74c3c;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+        }
+
+        .parameters-table .table-content {
+            display: none;
+        }
+
+        .parameters-modal .table-content {
+            display: block;
+        }
+
+        .modal-actions {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-btn.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .modal-btn.secondary {
+            background: #f1f2f6;
+            color: #2c3e50;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #e8e9ec;
+            transform: translateY(-2px);
+        }
+
+        /* 添加或修改以下样式 */
+        .modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin: 15px 0;
+        }
+
+        .modal-section {
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-header h4 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 调整下拉菜单在模态框中的样式 */
+        .modal-section .dropdown-btn {
+            background: white;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        /* 美化滚动条 */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 添加列表视图相关样式 */
+        .list-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-actions .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border: none;
+            color: #2c3e50;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .header-actions .action-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .trend.up {
+            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .trend.down {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-btn,
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background: #f1f2f6;
+            color: #3498db;
+        }
+
+        .delete-btn {
+            background: #f1f2f6;
+            color: #e74c3c;
+        }
+
+        .edit-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .delete-btn:hover {
+            background: #e74c3c;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* 编辑模式样式 */
+        .editing td input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .editing .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .save-btn,
+        .cancel-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        /* 修改卡片内容布局 */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .card-content h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .value-container {
+            display: flex;
+            align-items: baseline; /* 改为baseline对齐以更好地对齐数字和单位 */
+            justify-content: center;
+            gap: 4px; /* 减小数值和单位之间的间距 */
+            margin-bottom: 8px;
+        }
+
+        .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .trend {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: auto; /* 将趋势值推到右侧 */
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 趋势显示器不同状态的样式 */
+        .trend.positive {
+            color: #2ecc71;
+        }
+
+        .trend.negative {
+            color: #e74c3c;
+        }
+
+        .trend.normal {
+            color: #3498db;
+        }
+
+        .trend.warning {
+            color: #f1c40f;
+        }
+
+        .trend i {
+            font-size: 0.8rem;
+        }
+
+        /* 为趋势添加悬停效果 */
+        .trend:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .trend.positive:hover {
+            background: rgba(46, 204, 113, 0.15);
+        }
+
+        .trend.negative:hover {
+            background: rgba(231, 76, 60, 0.15);
+        }
+
+        .trend.normal:hover {
+            background: rgba(52, 152, 219, 0.15);
+        }
+
+        .trend.warning:hover {
+            background: rgba(241, 196, 15, 0.15);
+        }
+
+        /* 修改卡片标题样式 */
+        .overview-card h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        /* 修改���值显示样式 */
+        .value-container {
+            display: flex;
+            align-items: baseline; /* 改为baseline对齐以更好地对齐数字和单位 */
+            justify-content: center;
+            gap: 4px; /* 减小数值和单位之间的间距 */
+            margin-bottom: 8px;
+        }
+
+        /* 修改单位文本样式 */
+        .value-container span:not(.trend) {
+            font-size: 1.2rem; /* 增大单位字体 */
+            font-weight: 500; /* 增加字重 */
+            color: #2c3e50;
+            margin-top: 0; /* 移除顶部间距 */
+        }
+
+        /* 修改趋势显示样式 */
+        .trend {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: auto; /* 将趋势值推到右侧 */
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 电堆选择器mini版样式 */
+        .stack-selector-mini {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 2;
+        }
+
+        .dropdown-btn-mini {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-btn-mini:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .dropdown-content-mini {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .dropdown-content-mini .dropdown-item {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-content-mini .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .dropdown-content-mini .dropdown-item.active {
+            color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        /* 确保卡片内容可以正确定位选择器 */
+        .overview-card .card-content {
+            position: relative;
+        }
+    </style>
+
+    <!-- 添加燃料指标浮动图表面板 -->
+    <div class="floating-charts" id="fuelChartsPanel">
+        <div class="charts-header">
+            <h3>燃料指标实时趋势</h3>
+            <div class="close-icon" onclick="toggleFuelCharts()">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <div class="charts-grid">
+            <div class="mini-chart">
+                <h4>氢气输送压力趋势</h4>
+                <div id="pressureChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>氢气输送流量趋势</h4>
+                <div id="flowChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>氢气纯度趋势</h4>
+                <div id="purityChart" class="chart-container"></div>
+            </div>
+            <div class="mini-chart">
+                <h4>空气过量系数趋势</h4>
+                <div id="airRatioChart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加燃料指标图表初始化和更新脚本 -->
+    <script>
+        let fuelCharts = {
+            pressure: null,
+            flow: null,
+            purity: null,
+            airRatio: null
+        };
+
+        function initFuelCharts() {
+            // 清除现有图表
+            Object.keys(fuelCharts).forEach(key => {
+                if (fuelCharts[key]) {
+                    fuelCharts[key].dispose();
+                    fuelCharts[key] = null;
+                }
+            });
+
+            const chartElements = {
+                pressure: document.getElementById('pressureChart'),
+                flow: document.getElementById('flowChart'),
+                purity: document.getElementById('purityChart'),
+                airRatio: document.getElementById('airRatioChart')
+            };
+
+            // 初始化图表配置
+            const chartConfigs = {
+                pressure: {
+                    name: '氢气输送压力',
+                    unit: 'MPa',
+                    min: 0.05,
+                    max: 0.25,
+                    color: '#3498db'
+                },
+                flow: {
+                    name: '氢气输送流量',
+                    unit: 'L/min',
+                    min: 30,
+                    max: 90,
+                    color: '#2ecc71'
+                },
+                purity: {
+                    name: '氢气纯度',
+                    unit: '%',
+                    min: 99.9,
+                    max: 100,
+                    color: '#9b59b6'
+                },
+                airRatio: {
+                    name: '空气过量系数',
+                    unit: '',
+                    min: 1.6,
+                    max: 2.4,
+                    color: '#e74c3c'
+                }
+            };
+
+            // 初始化每个图表
+            Object.entries(chartElements).forEach(([key, element]) => {
+                if (element) {
+                    fuelCharts[key] = echarts.init(element);
+                    const option = getFuelChartOption(chartConfigs[key]);
+                    fuelCharts[key].setOption(option);
+                }
+            });
+        }
+
+        function getFuelChartOption(config) {
+            return {
+                grid: {
+                    top: 30,
+                    right: 20,
+                    bottom: 30,
+                    left: 50,
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                xAxis: {
+                    type: 'time',
+                    splitLine: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: `${config.name}(${config.unit})`,
+                    min: config.min,
+                    max: config.max
+                },
+                series: [{
+                    name: config.name,
+                    type: 'line',
+                    smooth: true,
+                    data: [],
+                    itemStyle: { color: config.color },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                            offset: 0,
+                            color: config.color + '40'
+                        }, {
+                            offset: 1,
+                            color: config.color + '10'
+                        }])
+                    }
+                }]
+            };
+        }
+
+        function toggleFuelCharts() {
+            const panel = document.getElementById('fuelChartsPanel');
+            const overlay = document.querySelector('.overlay');
+            
+            if (!panel.classList.contains('active')) {
+                panel.classList.add('active');
+                overlay.classList.add('active');
+                
+                setTimeout(() => {
+                    initFuelCharts();
+                    updateFuelCharts();
+                    // 调整图表大小
+                    Object.values(fuelCharts).forEach(chart => {
+                        if (chart) {
+                            chart.resize();
+                        }
+                    });
+                    if (!window.fuelChartsInterval) {
+                        window.fuelChartsInterval = setInterval(updateFuelCharts, 2000);
+                    }
+                }, 300);
+            } else {
+                closeFuelCharts();
+            }
+        }
+
+        function closeFuelCharts() {
+            const panel = document.getElementById('fuelChartsPanel');
+            const overlay = document.querySelector('.overlay');
+            
+            panel.classList.remove('active');
+            overlay.classList.remove('active');
+            
+            if (window.fuelChartsInterval) {
+                clearInterval(window.fuelChartsInterval);
+                window.fuelChartsInterval = null;
+            }
+        }
+
+        function updateFuelCharts() {
+            const now = new Date();
+            const tankData = tanksData[currentTank];
+            
+            // 生成当前储氢罐的数据
+            const data = {
+                pressure: tankData.pressure.base + (Math.random() * 2 - 1) * tankData.pressure.variance,
+                flow: tankData.flow.base + (Math.random() * 2 - 1) * tankData.flow.variance,
+                purity: tankData.purity.base + (Math.random() * 2 - 1) * tankData.purity.variance,
+                airRatio: tankData.airRatio.base + (Math.random() * 2 - 1) * tankData.airRatio.variance
+            };
+
+            // 更新图表数据
+            Object.entries(fuelCharts).forEach(([key, chart]) => {
+                if (chart) {
+                    const option = chart.getOption();
+                    option.series[0].data.push([now, data[key]]);
+                    if (option.series[0].data.length > 30) {
+                        option.series[0].data.shift();
+                    }
+                    chart.setOption(option);
+                }
+            });
+        }
+
+        // 每2秒更新一次数据
+        setInterval(updateFuelCharts, 2000);
+    </script>
+
+    <!-- 添加电堆数据管理脚本 -->
+    <script>
+        // 模拟两组电堆的数据
+        const stacksData = {
+            1: {
+                inletTemp: { base: 65, variance: 2 },
+                outletTemp: { base: 68, variance: 2 },
+                flowRate: { base: 180, variance: 10 },
+                fanSpeed: { base: 1200, variance: 50 }
+            },
+            2: {
+                inletTemp: { base: 63, variance: 2 },
+                outletTemp: { base: 66, variance: 2 },
+                flowRate: { base: 175, variance: 10 },
+                fanSpeed: { base: 1150, variance: 50 }
+            }
+        };
+
+        // 当前选中的电堆
+        let currentStack = '1'
+
+        // 添加电堆切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const stackBtns = document.querySelectorAll('.stack-btn');
+            stackBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 更新按钮状态
+                    stackBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 更新当前电堆
+                    currentStack = this.dataset.stack;
+                    
+                    // 立即更新数据显示
+                    updateThermalCards();
+                    
+                    // 更新图表标题
+                    const chartTitle = document.querySelector('#thermalChartsPanel .charts-header h3');
+                    if (chartTitle) {
+                        chartTitle.textContent = `${currentStack === '1' ? 'A' : 'B'}组电堆热管理系统实时趋势`;
+                    }
+                });
+            });
+        });
+
+        // 修改更新函数以支持不同电堆数据
+        function updateThermalCards() {
+            const stackData = stacksData[currentStack];
+            
+            // 更新所有卡片数据
+            updateCardData('inletTemp', stackData.inletTemp);
+            updateCardData('outletTemp', stackData.outletTemp);
+            updateCardData('flowRate', stackData.flowRate);
+            updateCardData('fanSpeed', stackData.fanSpeed);
+        }
+
+        // 辅助函数：更新单个卡片数据
+        function updateCardData(type, data) {
+            const value = data.base + Math.random() * data.variance;
+            const trend = Math.random() > 0.5 ? 'up' : 'down';
+            let card, unit, trendValue;
+
+            switch(type) {
+                case 'inletTemp':
+                    card = document.querySelector('.thermal-card:nth-child(1)');
+                    unit = '°C';
+                    trendValue = (Math.random() * 0.5).toFixed(1);
+                    break;
+                case 'outletTemp':
+                    card = document.querySelector('.thermal-card:nth-child(2)');
+                    unit = '°C';
+                    trendValue = (Math.random() * 0.5).toFixed(1);
+                    break;
+                case 'flowRate':
+                    card = document.querySelector('.thermal-card:nth-child(3)');
+                    unit = 'L/min';
+                    trendValue = (Math.random() * 5).toFixed(0);
+                    break;
+                case 'fanSpeed':
+                    card = document.querySelector('.thermal-card:nth-child(4)');
+                    unit = 'RPM';
+                    trendValue = (Math.random() * 50).toFixed(0);
+                    break;
+            }
+
+            if (card) {
+                const mainValue = card.querySelector('.main-value');
+                const trendValueEl = card.querySelector('.trend-value');
+                const trendBar = card.querySelector('.trend-bar');
+
+                // 更新主值
+                mainValue.textContent = `${value.toFixed(1)} ${unit}`;
+                
+                // 更新趋势值和箭头
+                trendValueEl.className = `trend-value ${trend}`;
+                trendValueEl.innerHTML = `
+                    <i class="fas fa-arrow-${trend}"></i>
+                    ${trendValue} ${unit}
+                `;
+
+                // 更新趋势条
+                if (trendBar) {
+                    const percentage = ((value - data.base + data.variance) / (2 * data.variance) * 100);
+                    trendBar.style.width = `${percentage}%`;
+                    
+                    // 更新趋势条状态
+                    trendBar.className = 'trend-bar';
+                    if (percentage > 80) {
+                        trendBar.classList.add('good');
+                    } else if (percentage < 40) {
+                        trendBar.classList.add('warning');
+                    } else {
+                        trendBar.classList.add('normal');
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 初始化所有下拉菜单 -->
+    <script>
+        // 初始化所有下拉菜单
+        function initDropdowns() {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            
+            dropdowns.forEach(dropdown => {
+                const btn = dropdown.querySelector('.dropdown-btn');
+                const items = dropdown.querySelectorAll('.dropdown-item');
+                
+                // 点击按钮切换下拉菜单
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // 关闭其他下拉菜单
+                    dropdowns.forEach(d => {
+                        if (d !== dropdown) {
+                            d.classList.remove('active');
+                        }
+                    });
+                    
+                    dropdown.classList.toggle('active');
+                });
+                
+                // 点击选项
+                items.forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        const selectedText = dropdown.querySelector('.selected-tank, .selected-stack');
+                        selectedText.textContent = item.textContent;
+                        
+                        items.forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                        
+                        // 更新数据
+                        if (item.dataset.tank) {
+                            currentTank = item.dataset.tank;
+                            updateFuelCards();
+                            updateFuelChartTitle();
+                        }
+                        if (item.dataset.stack) {
+                            currentStack = item.dataset.stack;
+                            updateThermalCards();
+                            updateThermalChartTitle();
+                        }
+                        
+                        dropdown.classList.remove('active');
+                    });
+                });
+            });
+            
+            // 点击页面其他地方关闭下拉菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.dropdown')) {
+                    dropdowns.forEach(d => d.classList.remove('active'));
+                }
+            });
+        }
+
+        // 关闭下拉菜单的函数
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown').forEach(d => {
+                d.classList.remove('active');
+            });
+            // 移除临时的全局点击监听器
+            window.removeEventListener('click', closeDropdownOnClickOutside);
+        }
+
+        // 点击外部关闭下拉菜单的处理函数
+        function closeDropdownOnClickOutside(e) {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            const isClickInside = Array.from(dropdowns).some(dropdown => 
+                dropdown.contains(e.target)
+            );
+            
+            if (!isClickInside) {
+                closeAllDropdowns();
+            }
+        }
+
+        // 更新图表标题的辅助函数
+        function updateFuelChartTitle() {
+            const chartTitle = document.querySelector('#fuelChartsPanel .charts-header h3');
+            if (chartTitle) {
+                chartTitle.textContent = `储氢罐 #${currentTank} 燃料指标实时趋势`;
+            }
+        }
+
+        function updateThermalChartTitle() {
+            const chartTitle = document.querySelector('#thermalChartsPanel .charts-header h3');
+            if (chartTitle) {
+                chartTitle.textContent = `${currentStack === '1' ? 'A' : 'B'}组电堆热管理系统实时趋势`;
+            }
+        }
+
+        // 添加键盘事件监听
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAllDropdowns();
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initDropdowns);
+    </script>
+
+    <!-- 在现有脚本后添加以下JavaScript代码 -->
+    <script>
+        function toggleParametersTable() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // 防止背景滚动
+        }
+
+        // 修改关闭模态框的函数
+        function closeParametersModal() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            
+            // 先移除active类
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+            
+            // 然后设置display为none
+            setTimeout(() => {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300); // 等待过渡动画完成
+            
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }
+
+        // 打开模态框的函数
+        function openParametersModal() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            
+            // 先设置display
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+            
+            // 强制重排后添加active类，确保过渡动画生效
+            setTimeout(() => {
+                modal.classList.add('active');
+                overlay.classList.add('active');
+            }, 10);
+            
+            // 禁用背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 页面加载完成后绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            const closeBtn = document.querySelector('.modal-close');
+
+            // 点���遮罩层关闭
+            overlay.addEventListener('click', closeParametersModal);
+
+            // 点击关闭按钮关闭
+            closeBtn.addEventListener('click', closeParametersModal);
+
+            // ESC键关闭
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeParametersModal();
+                }
+            });
+
+            // 阻止模态框本身的点击事件冒泡到遮罩层
+            modal.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        function refreshTableData() {
+            const refreshBtn = document.querySelector('.modal-btn.secondary');
+            const icon = refreshBtn.querySelector('i');
+            icon.classList.add('fa-spin');
+            
+            // 模拟刷新数据
+            setTimeout(() => {
+                updateParametersTable();
+                icon.classList.remove('fa-spin');
+            }, 1000);
+        }
+
+        // 更新原有的事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 点击遮罩层关闭模态框
+            document.querySelector('.modal-overlay').addEventListener('click', closeParametersModal);
+            
+            // ESC键关闭模态框
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeParametersModal();
+                }
+            });
+        });
+
+        // 更新表格数据的函数
+        function updateParametersTable() {
+            const tbody = document.querySelector('.parameters-modal tbody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            // 更新每一行的数据
+            rows.forEach(row => {
+                const valueCell = row.querySelector('td:nth-child(2)');
+                const currentValue = parseFloat(valueCell.textContent);
+                const newValue = currentValue + (Math.random() * 2 - 1);
+                
+                // 根据不同参数类型设置不同的格式
+                if (valueCell.textContent.includes('°C')) {
+                    valueCell.textContent = `${newValue.toFixed(1)}°C`;
+                } else if (valueCell.textContent.includes('L/min')) {
+                    valueCell.textContent = `${Math.round(newValue)}L/min`;
+                } else if (valueCell.textContent.includes('MPa')) {
+                    valueCell.textContent = `${newValue.toFixed(2)}MPa`;
+                } else if (valueCell.textContent.includes('%')) {
+                    valueCell.textContent = `${newValue.toFixed(2)}%`;
+                } else {
+                    valueCell.textContent = newValue.toFixed(1);
+                }
+            });
+        }
+
+        // 添加刷新功能
+        document.querySelector('.action-btn[title="��新数据"]').addEventListener('click', function() {
+            this.querySelector('i').classList.add('fa-spin');
+            // 模拟刷新数据
+            setTimeout(() => {
+                updateParametersTable();
+                this.querySelector('i').classList.remove('fa-spin');
+            }, 1000);
+        });
+
+        // 添加导出功能
+        document.querySelector('.action-btn[title="导出数据"]').addEventListener('click', function() {
+            exportTableData();
+        });
+
+        function exportTableData() {
+            // 实现导出功能
+            const table = document.querySelector('.parameters-table table');
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                let rowData = [];
+                row.querySelectorAll('th, td').forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                csv.push(rowData.join(','));
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', '燃料电池关键指标.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 添加或修改以下JavaScript代码
+        function refreshModalData() {
+            const refreshBtn = document.querySelector('.modal-btn.secondary');
+            const icon = refreshBtn.querySelector('i');
+            icon.classList.add('fa-spin');
+            
+            // 更新两个部分的数据
+            updateThermalCards();
+            updateFuelCards();
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+            }, 1000);
+        }
+
+        function exportModalData() {
+            // 导出两个部分的数据
+            const data = {
+                thermal: collectThermalData(),
+                fuel: collectFuelData()
+            };
+            
+            // 转换为CSV格式
+            const csv = convertToCSV(data);
+            
+            // ���载文件
+            downloadCSV(csv, '燃料电池性能数据.csv');
+        }
+
+        function collectThermalData() {
+            // 收集热管理系统数据
+            const thermalCards = document.querySelectorAll('.thermal-grid .modal-card');
+            return Array.from(thermalCards).map(card => ({
+                name: card.querySelector('.card-header span').textContent,
+                value: card.querySelector('.main-value').textContent,
+                trend: card.querySelector('.trend-value').textContent,
+                range: card.querySelector('.reference-value').textContent
+            }));
+        }
+
+        function collectFuelData() {
+            // 收集燃料指标数据
+            const fuelCards = document.querySelectorAll('.fuel-grid .modal-card');
+            return Array.from(fuelCards).map(card => ({
+                name: card.querySelector('.card-header span').textContent,
+                value: card.querySelector('.main-value').textContent,
+                trend: card.querySelector('.trend-value').textContent,
+                range: card.querySelector('.reference-value').textContent
+            }));
+        }
+
+        function convertToCSV(data) {
+            // 转换数据为CSV格式
+            const headers = ['参数名称', '当前值', '变化趋势', '目标范围'];
+            const rows = [
+                headers,
+                ...data.thermal.map(item => [item.name, item.value, item.trend, item.range]),
+                [''], // 空行分隔
+                ...data.fuel.map(item => [item.name, item.value, item.trend, item.range])
+            ];
+            
+            return rows.map(row => row.join(',')).join('\n');
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+    <!-- 添加交互功能相关的JavaScript代码 -->
+    <script>
+        // 添加交互功能相关的JavaScript代码
+        function editRow(btn) {
+            const row = btn.closest('tr');
+            const cells = row.querySelectorAll('td:not(.actions)');
+            const originalValues = [];
+
+            // 保存原始值并创建输入框
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) { // 不包括状态列
+                    originalValues.push(cell.textContent.trim());
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = cell.textContent.trim();
+                    cell.textContent = '';
+                    cell.appendChild(input);
+                }
+            });
+
+            // 替换编辑/删除按钮为保存/取消按钮
+            const actionsCell = row.querySelector('.actions');
+            actionsCell.innerHTML = `
+                <button class="save-btn" onclick="saveRow(this, ${JSON.stringify(originalValues)})">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="cancel-btn" onclick="cancelEdit(this, ${JSON.stringify(originalValues)})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            row.classList.add('editing');
+        }
+
+        function saveRow(btn, originalValues) {
+            const row = btn.closest('tr');
+            const inputs = row.querySelectorAll('input');
+            const newValues = Array.from(inputs).map(input => input.value);
+
+            // 验证新值
+            if (!validateValues(newValues)) {
+                alert('请输入有效值！');
+                return;
+            }
+
+            // 更新单元格内容
+            inputs.forEach((input, index) => {
+                const cell = input.parentElement;
+                cell.textContent = input.value;
+            });
+
+            restoreActions(row);
+            row.classList.remove('editing');
+        }
+
+        function cancelEdit(btn, originalValues) {
+            const row = btn.closest('tr');
+            const cells = row.querySelectorAll('td:not(.actions)');
+
+            // 恢复原始值
+            cells.forEach((cell, index) => {
+                if (index < originalValues.length) {
+                    cell.textContent = originalValues[index];
+                }
+            });
+
+            restoreActions(row);
+            row.classList.remove('editing');
+        }
+
+        function deleteRow(btn) {
+            if (confirm('确定要删除这条记录吗？')) {
+                const row = btn.closest('tr');
+                row.remove();
+            }
+        }
+
+        function restoreActions(row) {
+            const actionsCell = row.querySelector('.actions');
+            actionsCell.innerHTML = `
+                <button class="edit-btn" onclick="editRow(this)">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="delete-btn" onclick="deleteRow(this)">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+        }
+
+        function validateValues(values) {
+            // 添加验证逻辑
+            return values.every(value => value.trim() !== '');
+        }
+
+        function importData(type) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.xlsx';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                // 处理文件导入逻辑
+                console.log(`Importing ${type} data from`, file.name);
+            };
+            input.click();
+        }
+
+        function exportData(type) {
+            const table = document.querySelector(`.${type}-list table`);
+            const csv = [];
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('th, td:not(.actions)').forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                csv.push(rowData.join(','));
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `${type}_data.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+    <!-- 添加打开模态框的事监听 -->
+    <script>
+        // 添加打开模态框的事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取打开模态框的按钮（假设是通过点击参数表格打开）
+            const openModalBtn = document.querySelector('.parameters-table');
+            if (openModalBtn) {
+                openModalBtn.addEventListener('click', openParametersModal);
+            }
+
+            // 获取模态框和遮罩层元素
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            const closeBtn = document.querySelector('.modal-close');
+
+            // 点击遮罩层关闭
+            if (overlay) {
+                overlay.addEventListener('click', closeParametersModal);
+            }
+
+            // 点击关闭按钮关闭
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeParametersModal);
+            }
+
+            // ESC键关闭
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeParametersModal();
+                }
+            });
+
+            // 阻止模态框本身的点事件冒泡到罩层
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+
+        // 打开模态框的函数
+        function openParametersModal() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            
+            if (modal && overlay) {
+                // 先设置display
+                modal.style.display = 'block';
+                overlay.style.display = 'block';
+                
+                // 强制���排后添加active类，确保过渡动画生效
+                setTimeout(() => {
+                    modal.classList.add('active');
+                    overlay.classList.add('active');
+                }, 10);
+                
+                // 禁用背景滚动
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // 关闭模态框的函数
+        function closeParametersModal() {
+            const modal = document.querySelector('.parameters-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            
+            if (modal && overlay) {
+                // 先移除active类
+                modal.classList.remove('active');
+                overlay.classList.remove('active');
+                
+                // 等待过渡动画完成后隐藏元素
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    overlay.style.display = 'none';
+                }, 300);
+                
+                // 恢复背景滚动
+                document.body.style.overflow = '';
+            }
+        }
+    </script>
+
+    <!-- 添加电堆切换功能的JavaScript代码 -->
+    <script>
+        // 添加电堆切换功能的JavaScript代码
+        const stackData = {
+            1: { // A组电堆
+                power: { base: 120, variance: 5 },
+                trend: { base: 5, variance: 2 }
+            },
+            2: { // B组电堆
+                power: { base: 115, variance: 5 },
+                trend: { base: 3, variance: 2 }
+            }
+        };
+
+        function initStackSelector() {
+            const dropdown = document.querySelector('.stack-selector-mini .dropdown');
+            const btn = dropdown.querySelector('.dropdown-btn-mini');
+            const items = dropdown.querySelectorAll('.dropdown-item');
+            const content = dropdown.querySelector('.dropdown-content-mini');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            });
+
+            items.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // 更新选中状态
+                    items.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    // 更新按钮文本
+                    const selectedText = dropdown.querySelector('.selected-stack');
+                    selectedText.textContent = item.textContent;
+                    
+                    // 更新数据
+                    updateStackPower(item.dataset.stack);
+                    
+                    // 关闭下拉菜单
+                    content.style.display = 'none';
+                });
+            });
+
+            // 点击其他地方关闭下���菜单
+            document.addEventListener('click', () => {
+                content.style.display = 'none';
+            });
+        }
+
+        function updateStackPower(stackId) {
+            const data = stackData[stackId];
+            const powerValue = data.power.base + (Math.random() * 2 - 1) * data.power.variance;
+            const trendValue = data.trend.base + (Math.random() * 2 - 1) * data.trend.variance;
+            
+            const card = document.querySelector('.overview-card:last-child');
+            const valueEl = card.querySelector('.value');
+            const trendEl = card.querySelector('.trend');
+            
+            valueEl.textContent = `${powerValue.toFixed(0)} kW`;
+            trendEl.innerHTML = `↑ ${trendValue.toFixed(1)} kW`;
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initStackSelector();
+            // 初始更新数据
+            updateStackPower(1);
+        });
+    </script>
+
+    <!-- 添加趋势条动态更新功能 -->
+    <script>
+        // 添加趋势条动态更新功能
+        function updateTrendBar(card, value, maxValue, minValue) {
+            const trendBar = card.querySelector('.trend-bar');
+            if (!trendBar) return;
+
+            // 计算百分比
+            const range = maxValue - minValue;
+            const percentage = ((value - minValue) / range) * 100;
+            const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+
+            // 只更新宽度，不再更改颜色类
+            trendBar.style.width = `${clampedPercentage}%`;
+        }
+
+        // 修改趋势显示更新逻辑
+        function updateTrendDisplay(trendElement, value) {
+            const icon = value > 0 ? 'up' : (value < 0 ? 'down' : 'equals');
+            const className = value > 0 ? 'up' : (value < 0 ? 'down' : 'stable');
+            
+            trendElement.className = `trend ${className}`;
+            trendElement.innerHTML = `
+                <i class="fas fa-arrow-${icon}"></i>
+                ${Math.abs(value).toFixed(1)}
+            `;
+        }
+
+        // 定义各个指标的参考值
+        const referenceValues = {
+            hydrogenConsumption: { min: 1.5, max: 3.5 },  // 全船氢耗 (kg/h)
+            utilizationRate: { min: 85, max: 100 },       // 氢气利用率 (%)
+            motorPower: { min: 0, max: 250 },             // 驱动电机功率 (kW)
+            stackPower: { min: 0, max: 150 }              // 电堆功率 (kW)
+        };
+
+        // 更新所有卡片的函数
+        function updateOverviewCards() {
+            // 更新全船氢耗
+            const hydrogenCard = document.querySelector('.overview-card:nth-child(1)');
+            const hydrogenValue = 2.5 + (Math.random() * 0.4 - 0.2);
+            hydrogenCard.querySelector('.value').textContent = hydrogenValue.toFixed(1);
+            const hydrogenTrend = (Math.random() * 0.4 - 0.2).toFixed(1);
+            hydrogenCard.querySelector('.trend').innerHTML = 
+                `<i class="fas fa-arrow-${hydrogenTrend > 0 ? 'up' : 'down'}"></i>${Math.abs(hydrogenTrend)}`;
+            updateTrendBar(hydrogenCard, hydrogenValue, referenceValues.hydrogenConsumption.max, referenceValues.hydrogenConsumption.min);
+
+            // 更新氢气利用率
+            const utilizationCard = document.querySelector('.overview-card:nth-child(2)');
+            const utilizationValue = 95.3 + (Math.random() * 2 - 1);
+            utilizationCard.querySelector('.value').textContent = utilizationValue.toFixed(1);
+            const utilizationTrend = (Math.random() * 2 - 1).toFixed(1);
+            utilizationCard.querySelector('.trend').innerHTML = 
+                `<i class="fas fa-arrow-${utilizationTrend > 0 ? 'up' : 'down'}"></i>${Math.abs(utilizationTrend)}`;
+            updateTrendBar(utilizationCard, utilizationValue, referenceValues.utilizationRate.max, referenceValues.utilizationRate.min);
+
+            // 更新驱动电机功率
+            const motorCard = document.querySelector('.overview-card:nth-child(3)');
+            const motorValue = 180 + (Math.random() * 20 - 10);
+            motorCard.querySelector('.value').textContent = motorValue.toFixed(0);
+            updateTrendBar(motorCard, motorValue, referenceValues.motorPower.max, referenceValues.motorPower.min);
+
+            // 更新电堆功率
+            const stackCard = document.querySelector('.overview-card:nth-child(4)');
+            const stackValue = 120 + (Math.random() * 10 - 5);
+            stackCard.querySelector('.value').textContent = stackValue.toFixed(0);
+            const stackTrend = (Math.random() * 10 - 5).toFixed(1);
+            stackCard.querySelector('.trend').innerHTML = 
+                `<i class="fas fa-arrow-${stackTrend > 0 ? 'up' : 'down'}"></i>${Math.abs(stackTrend)}`;
+            updateTrendBar(stackCard, stackValue, referenceValues.stackPower.max, referenceValues.stackPower.min);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始更新
+            updateOverviewCards();
+            
+            // 设置定时更新
+            setInterval(updateOverviewCards, 3000);
+        });
+    </script>
+
+    <script>
+        // 定义两组电堆的数据模型
+        const stackPowerData = {
+            1: { // A组电堆
+                basePower: 120,
+                variance: 5,
+                efficiency: 0.95
+            },
+            2: { // B组电堆
+                basePower: 115,
+                variance: 6,
+                efficiency: 0.93
+            }
+        };
+
+        let currentStackId = '1'; // 当前选中的电堆ID
+
+        // 初始化电堆选择器
+        function initStackSelectorMini() {
+            const selector = document.querySelector('.stack-selector-mini');
+            const btn = selector.querySelector('.dropdown-btn-mini');
+            const content = selector.querySelector('.dropdown-content-mini');
+            const items = selector.querySelectorAll('.dropdown-item');
+
+            // 点击按钮显示/隐藏下拉菜单
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = content.style.display === 'block';
+                // 关闭所有其他下拉菜单
+                document.querySelectorAll('.dropdown-content-mini').forEach(el => {
+                    el.style.display = 'none';
+                });
+                content.style.display = isVisible ? 'none' : 'block';
+            });
+
+            // 点击选项切换电堆
+            items.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // 更新选中状态
+                    items.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    // 更新显示的文本
+                    const selectedText = btn.querySelector('.selected-stack');
+                    selectedText.textContent = item.textContent;
+                    
+                    // 更新当前电堆ID并刷新数据
+                    currentStackId = item.dataset.stack;
+                    updateStackPowerData();
+                    
+                    // 关闭下拉菜单
+                    content.style.display = 'none';
+                });
+            });
+
+            // 点击其他地方关闭下拉菜单
+            document.addEventListener('click', () => {
+                content.style.display = 'none';
+            });
+        }
+
+        // 更新电堆功率数据
+        function updateStackPowerData() {
+            const stackData = stackPowerData[currentStackId];
+            const card = document.querySelector('.overview-card:last-child');
+            
+            // 生成随机功率值
+            const power = stackData.basePower + (Math.random() * 2 - 1) * stackData.variance;
+            const trend = (Math.random() * 2 - 1) * 3; // 随机趋势值
+            
+            // 更新显示
+            const valueEl = card.querySelector('.value');
+            const trendEl = card.querySelector('.trend');
+            const trendBar = card.querySelector('.trend-bar');
+            
+            valueEl.textContent = Math.round(power);
+            
+            // 更新趋势显示
+            const trendIcon = trend > 0 ? 'up' : 'down';
+            const trendClass = trend > 0 ? 'positive' : 'negative';
+            trendEl.className = `trend ${trendClass}`;
+            trendEl.innerHTML = `
+                <i class="fas fa-arrow-${trendIcon}"></i>
+                ${Math.abs(trend).toFixed(1)}
+            `;
+            
+            // 更新趋势条
+            const percentage = (power / 150) * 100; // 假设最大功率为150kW
+            trendBar.style.width = `${percentage}%`;
+            trendBar.className = `trend-bar ${trendClass}`;
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initStackSelectorMini();
+            // 初始更新数据
+            updateStackPowerData();
+            // 设置定时更新
+            setInterval(updateStackPowerData, 3000);
+        });
+    </script>
+</body>
+</html>
